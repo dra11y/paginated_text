@@ -20,7 +20,7 @@ This package has no dependencies other than Flutter 3, and no platform-specific 
 
 ## Usage
 
-Basic usage (best in a `StatefulWidget` or other provider such as Riverpod / Flutter Hooks that you can manage state with) is as follows:
+Basic usage (best in a `StatefulWidget` or other provider such as Riverpod / Flutter Hooks -- neither is required -- that you can manage state with) is as follows:
 
 ```dart
 final controller = PaginatedController(PaginateData(
