@@ -1,6 +1,12 @@
+/// Model that provides the text, page index, and number of lines of a given page.
 class PageInfo {
+  /// The index of the page after pagination.
   final int pageIndex;
+
+  /// The actual text of this page.
   final String text;
+
+  /// The number of lines on this page.
   final int lines;
 
   const PageInfo({
@@ -9,6 +15,7 @@ class PageInfo {
     required this.lines,
   });
 
+  /// Construct an empty page model.
   static get empty => const PageInfo(pageIndex: 0, text: '', lines: 0);
 
   @override

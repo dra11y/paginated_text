@@ -4,23 +4,48 @@ import 'package:flutter/material.dart';
 import 'package:paginated_text/src/models/models.dart';
 import 'package:paginated_text/src/utils/fitted_text.dart';
 
+/// The controller with `ChangeNotifier` that computes the text pages from `PaginateData`.
 class PaginatedController with ChangeNotifier {
+  /// The data this controller was instantiated with.
   PaginateData get paginateData => _data;
-  PaginateData _data;
-  Size _layoutSize;
 
+  /// Whether the current page is the first page.
   bool get isFirst => pageIndex == 0;
+
+  /// Whether the current page is the last page.
   bool get isLast => pageIndex == pages.length - 1;
+
+  /// The current page model.
   PageInfo get currentPage =>
       pages.isNotEmpty ? pages[_pageIndex] : PageInfo.empty;
+
+  /// An unmodifiable list of the current paginated page models.
   late final pages = UnmodifiableListView(_pages);
+
+  /// The index of the current page.
   int get pageIndex => _pageIndex;
+
+  /// The index of the page previously viewed.
   int get previousPageIndex => _previousPageIndex;
+
+  /// The 1-based number of the current page (pageIndex + 1).
   int get pageNumber => _pageIndex + 1;
+
+  /// The number or count of pages after pagination.
   int get numPages => pages.length;
+
+  /// The size of the layout used for the current pagination.
+  Size get layoutSize => _layoutSize;
+
+  /// The maximum number of lines that can be shown on the page,
+  /// given the `layoutSize`.
   int get maxLinesPerPage => _maxLinesPerPage;
+
+  /// The height of a single line given the configured `PaginateData.style`.
   double get lineHeight => _lineHeight;
 
+  PaginateData _data;
+  Size _layoutSize;
   final List<PageInfo> _pages = [];
   int _pageIndex = 0;
   int _previousPageIndex = 0;
@@ -29,6 +54,7 @@ class PaginatedController with ChangeNotifier {
 
   PaginatedController(this._data) : _layoutSize = Size.zero;
 
+  /// Tells the controller to update its `layoutSize`. Causes repagination if needed.
   void updateLayoutSize(Size layoutSize) {
     final dx =
         (layoutSize.width - _layoutSize.width).abs() > _data.resizeTolerance;
@@ -39,6 +65,7 @@ class PaginatedController with ChangeNotifier {
     }
   }
 
+  /// Go to the next page. Do nothing if on the last page.
   void next() {
     if (_pageIndex == _pages.length - 1) {
       return;
@@ -48,6 +75,7 @@ class PaginatedController with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Go to the previous page. Do nothing if on the first page.
   void previous() {
     if (_pageIndex == 0) {
       return;
@@ -57,6 +85,7 @@ class PaginatedController with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Sets the page explicitly to a given index. Throws a `RangeError` if out of range.
   void setPageIndex(int pageIndex) {
     if (pageIndex < 0 || pageIndex > _pages.length - 1) {
       throw RangeError.range(pageIndex, 0, _pages.length - 1);
@@ -66,6 +95,7 @@ class PaginatedController with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Update this controller instance with given `data` and `layoutSize`.
   void update(PaginateData data, Size layoutSize) {
     if (data == _data && layoutSize == _layoutSize) {
       return;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Determines how the page break should occur during pagination.
 enum PageBreak {
   /// Break pages on the last visible word of the page.
   word,
@@ -28,6 +29,7 @@ enum PageBreak {
   };
 }
 
+/// User-provided text and configuration of how the text should be formatted and paginated.
 class PaginateData {
   /// The whole text to be paginated. The initial letter will be a drop cap
   /// if `dropCapLines` > 0.
@@ -80,6 +82,7 @@ class PaginateData {
     this.parseInlineMarkdown = false,
   });
 
+  /// Make a copy of this object with specified modified properties.
   PaginateData copyWith({
     String? text,
     TextStyle? style,

@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:paginated_text/paginated_text.dart';
 
+import 'drop_cap_text.dart';
+
+/// Defines the builder function for `PaginatedText.builder`.
 typedef PaginatedTextBuilderFunction = Widget Function(
     BuildContext context, Widget child);
 
+/// Built-in package widget that provides a basic view for the `PaginatedController`.
+/// A `builder` can be passed, or you can use a totally custom widget with just the `controller`.
 class PaginatedText extends StatelessWidget {
   const PaginatedText(
     this.controller, {
