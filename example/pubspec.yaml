@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   float_column: ^2.1.5
   google_fonts: ^6.2.1
+  animations: ^2.0.11
 
 dev_dependencies:
   flutter_test:

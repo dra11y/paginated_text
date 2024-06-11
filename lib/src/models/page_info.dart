@@ -21,4 +21,8 @@ class PageInfo {
           pageIndex == other.pageIndex &&
           text == other.text &&
           lines == other.lines);
+
+  @override
+  String toString() =>
+      'PageInfo(pageIndex: $pageIndex, text.length: ${text.length}, lines: $lines)';
 }

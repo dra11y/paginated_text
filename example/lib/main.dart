@@ -1,8 +1,7 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:paginated_text/paginated_text.dart';
-
-// The Great Peace towards which people of good will throughout the centuries have inclined their hearts, of which seers and poets for countless generations have expressed their vision, and for which from age to age the sacred scriptures of mankind have constantly held the promise, is now at long last within the reach of the nations. For the first time in history it is possible for everyone to view the entire planet, with all its myriad diversified peoples, in one perspective. World peace is not only possible but inevitable. It is the next stage in the evolution of this planet—in the words of one great thinker, “the planetization of mankind”.
 
 const String pwp = '''
 To the Peoples of the World:
@@ -43,14 +42,16 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = pwp.trim();
-    final style = GoogleFonts.aBeeZee(fontSize: 40, height: 1.5);
+    final style = GoogleFonts.notoSerif(fontSize: 36, height: 1.5);
+    final dropCapStyle = GoogleFonts.bellefair();
 
     return MaterialApp(
       themeMode: ThemeMode.dark,
       theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        body: PaginatedExample(text: text, style: style),
+        body: PaginatedExample(
+            text: text, style: style, dropCapStyle: dropCapStyle),
       ),
     );
   }
@@ -61,18 +62,27 @@ class PaginatedExample extends StatefulWidget {
     super.key,
     required this.text,
     required this.style,
+    required this.dropCapStyle,
   });
 
   final String text;
   final TextStyle style;
+  final TextStyle dropCapStyle;
 
   @override
   State<PaginatedExample> createState() => _PaginatedExampleState();
 }
 
-class _PaginatedExampleState extends State<PaginatedExample> {
+class _PaginatedExampleState extends State<PaginatedExample>
+    with SingleTickerProviderStateMixin {
   late Future _googleFontsPending;
   late PaginatedController _controller;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -81,9 +91,11 @@ class _PaginatedExampleState extends State<PaginatedExample> {
       text: widget.text,
       dropCapLines: 3,
       style: widget.style,
+      dropCapStyle: widget.dropCapStyle,
     ));
     _googleFontsPending = GoogleFonts.pendingFonts([
       widget.style,
+      widget.dropCapStyle,
     ]);
   }
 
@@ -96,38 +108,91 @@ class _PaginatedExampleState extends State<PaginatedExample> {
             return const CircularProgressIndicator.adaptive();
           }
 
-          return Column(
-            children: [
-              Expanded(
-                child: LayoutBuilder(builder: (context, constraints) {
-                  return Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: PaginatedText(_controller),
-                  );
-                }),
-              ),
-              ButtonBar(
-                alignment: MainAxisAlignment.center,
-                children: [
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _controller.previous();
-                      });
-                    },
-                    child: const Text('Prev', style: TextStyle(fontSize: 30)),
+          final reverse = _controller.pageIndex < _controller.previousPageIndex;
+
+          return Padding(
+            padding: const EdgeInsets.all(24),
+            child: PaginatedText(
+              _controller,
+              builder: (context, child) {
+                return DefaultTextStyle(
+                  style: widget.style,
+                  child: Column(
+                    children: [
+                      Text('The Promise of World Peace',
+                          style: widget.dropCapStyle.copyWith(
+                              fontSize: 40, fontStyle: FontStyle.italic)),
+                      Expanded(
+                        child: PageTransitionSwitcher(
+                          duration: const Duration(seconds: 1),
+                          reverse: reverse,
+                          transitionBuilder:
+                              (child, primaryAnimation, secondaryAnimation) {
+                            const offscreen = Offset(-1.5, 0.0);
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: Offset.zero,
+                                end: offscreen,
+                              ).animate(secondaryAnimation),
+                              child: FadeTransition(
+                                opacity: Tween<double>(
+                                  begin: 0.0,
+                                  end: 1.0,
+                                ).animate(primaryAnimation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: Padding(
+                            key: ValueKey(_controller.currentPage.pageIndex),
+                            padding: const EdgeInsets.all(40),
+                            child: child,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                          'Page ${_controller.pageNumber} of ${_controller.numPages}',
+                          style: widget.style.copyWith(fontSize: 24)),
+                      const SizedBox(height: 20),
+                      ButtonBar(
+                        alignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: _controller.isFirst
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _controller.previous();
+                                    });
+                                  },
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child:
+                                  Text('Prev', style: TextStyle(fontSize: 30)),
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: _controller.isLast
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _controller.next();
+                                    });
+                                  },
+                            child: const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child:
+                                  Text('Next', style: TextStyle(fontSize: 30)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                  TextButton(
-                    onPressed: () {
-                      setState(() {
-                        _controller.next();
-                      });
-                    },
-                    child: const Text('Next', style: TextStyle(fontSize: 30)),
-                  ),
-                ],
-              ),
-            ],
+                );
+              },
+            ),
           );
         });
   }

@@ -67,60 +67,71 @@ class FittedText {
   }
 }
 
-class PaginatedText extends StatefulWidget {
+typedef PaginatedTextBuilderFunction = Widget Function(
+    BuildContext context, Widget child);
+
+class PaginatedText extends StatelessWidget {
   const PaginatedText(
     this.controller, {
     super.key,
+    this.builder,
   });
+
+  /// Called at layout time to construct the widget tree.
+  ///
+  /// The builder must not return null.
+  final PaginatedTextBuilderFunction? builder;
 
   final PaginatedController controller;
 
   @override
-  State<PaginatedText> createState() => _PaginatedTextState();
-}
-
-class _PaginatedTextState extends State<PaginatedText> {
-  late final PaginatedController controller = widget.controller;
-
-  @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: widget.controller,
-      builder: (context, child) {
-        return LayoutBuilder(builder: (context, constraints) {
+      listenable: controller,
+      builder: (context, _) {
+        final child = LayoutBuilder(builder: (context, constraints) {
           final currentPage = controller.currentPage;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             controller.updateLayoutSize(constraints.biggest);
           });
+
           return DropCapText(
-            key: ValueKey(currentPage),
+            key: ValueKey(currentPage.pageIndex),
             currentPage.text,
             parseInlineMarkdown: true,
-            style: controller.data.style,
-            dropCapStyle: controller.data.dropCapStyle,
+            style: controller.paginateData.style,
+            dropCapStyle: controller.paginateData.dropCapStyle,
             dropCapChars: currentPage.pageIndex == 0 ? 1 : 0,
-            capLines: controller.data.dropCapLines,
+            capLines: controller.paginateData.dropCapLines,
           );
         });
+
+        return builder?.call(context, child) ?? child;
       },
     );
   }
 }
 
 class PaginatedController with ChangeNotifier {
-  PaginateData get data => _data;
+  PaginateData get paginateData => _data;
   PaginateData _data;
   Size _layoutSize;
 
+  bool get isFirst => pageIndex == 0;
+  bool get isLast => pageIndex == pages.length - 1;
   PageInfo get currentPage =>
       pages.isNotEmpty ? pages[_pageIndex] : PageInfo.empty;
   late final pages = UnmodifiableListView(_pages);
   int get pageIndex => _pageIndex;
+  int get previousPageIndex => _previousPageIndex;
+  int get pageNumber => _pageIndex + 1;
+  int get numPages => pages.length;
   int get maxLinesPerPage => _maxLinesPerPage;
   double get lineHeight => _lineHeight;
 
   final List<PageInfo> _pages = [];
   int _pageIndex = 0;
+  int _previousPageIndex = 0;
   int _maxLinesPerPage = 0;
   double _lineHeight = 0.0;
 
@@ -140,6 +151,7 @@ class PaginatedController with ChangeNotifier {
     if (_pageIndex == _pages.length - 1) {
       return;
     }
+    _previousPageIndex = _pageIndex;
     _pageIndex++;
     notifyListeners();
   }
@@ -148,6 +160,7 @@ class PaginatedController with ChangeNotifier {
     if (_pageIndex == 0) {
       return;
     }
+    _previousPageIndex = _pageIndex;
     _pageIndex--;
     notifyListeners();
   }
@@ -156,6 +169,7 @@ class PaginatedController with ChangeNotifier {
     if (pageIndex < 0 || pageIndex > _pages.length - 1) {
       throw RangeError.range(pageIndex, 0, _pages.length - 1);
     }
+    _previousPageIndex = _pageIndex;
     _pageIndex = pageIndex;
     notifyListeners();
   }

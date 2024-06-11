@@ -41,8 +41,8 @@ class PaginateData {
       );
 
   @override
-  int get hashCode => Object.hash(
-      text, style, dropCapLines, dropCapStyle, textDirection, textScaler);
+  int get hashCode => Object.hash(text, style, dropCapLines, dropCapStyle,
+      textDirection, textScaler, sizeTolerance);
 
   @override
   bool operator ==(Object other) =>
