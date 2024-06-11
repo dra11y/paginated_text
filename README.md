@@ -2,7 +2,7 @@
 
 A Flutter package that provides a paginated text view with optional auto-sized initial drop cap.
 
-![Animated GIF screen demo of paginated_text](paginated_text_demo.gif)
+![Animated GIF screen demo of paginated_text](https://raw.githubusercontent.com/dra11y/paginated_text/main/paginated_text_demo.gif)
 
 ## WIP - Work in Progress
 

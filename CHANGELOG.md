@@ -1,3 +1,6 @@
+## 0.0.4
+* Fix link to screen demo.
+
 ## 0.0.3
 * Fix typo in pubspec.yaml.
 * Make screen animated GIF smaller.
