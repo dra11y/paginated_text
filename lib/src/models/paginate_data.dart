@@ -88,7 +88,7 @@ class PaginateData {
     bool clearDropCapStyle = false,
     TextDirection? textDirection,
     TextScaler? textScaler,
-    double? sizeTolerance,
+    double? resizeTolerance,
   }) =>
       PaginateData(
         text: text ?? this.text,
@@ -98,7 +98,7 @@ class PaginateData {
         dropCapLines: dropCapLines ?? this.dropCapLines,
         textDirection: textDirection ?? this.textDirection,
         textScaler: textScaler ?? this.textScaler,
-        resizeTolerance: sizeTolerance ?? this.resizeTolerance,
+        resizeTolerance: resizeTolerance ?? this.resizeTolerance,
       );
 
   @override
