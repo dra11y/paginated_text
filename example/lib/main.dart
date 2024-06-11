@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:paginated_text/paginated_text.dart';
 
+/// From: “The Promise of World Peace”
+/// https://www.bahai.org/documents/the-universal-house-of-justice/promise-world-peace
 const String pwp = '''
 To the Peoples of the World:
 
@@ -16,7 +18,7 @@ The scientific and technological advances occurring in this unusually blessed ce
 
 It is out of a deep sense of spiritual and moral duty that we are impelled at this opportune moment to invite your attention to the penetrating insights first communicated to the rulers of mankind more than a century ago by Bahá’u’lláh, Founder of the Bahá’í Faith, of which we are the Trustees.
 
-“The winds of despair”, Bahá’u’lláh wrote, “are, alas, blowing from every direction, and the strife that divides and afflicts the human race is daily increasing. The signs of impending convulsions and chaos can now be discerned, inasmuch as the prevailing order appears to be lamentably defective.” This prophetic judgement has been amply confirmed by the common experience of humanity. Flaws in the prevailing order are conspicuous in the inability of sovereign states organized as United Nations to exorcize the spectre of war, the threatened collapse of the international economic order, the spread of anarchy and terrorism, and the intense suffering which these and other afflictions are causing to increasing millions. Indeed, so much have aggression and conflict come to characterize our social, economic and religious systems, that many have succumbed to the view that such behaviour is intrinsic to human nature and therefore ineradicable.
+“_The winds of despair_”, Bahá’u’lláh wrote, “_are, alas, blowing from every direction, and the strife that divides and afflicts the human race is daily increasing. The signs of impending convulsions and chaos can now be discerned, inasmuch as the prevailing order appears to be lamentably defective._” This prophetic judgement has been amply confirmed by the common experience of humanity. Flaws in the prevailing order are conspicuous in the inability of sovereign states organized as United Nations to exorcize the spectre of war, the threatened collapse of the international economic order, the spread of anarchy and terrorism, and the intense suffering which these and other afflictions are causing to increasing millions. Indeed, so much have aggression and conflict come to characterize our social, economic and religious systems, that many have succumbed to the view that such behaviour is intrinsic to human nature and therefore ineradicable.
 
 With the entrenchment of this view, a paralyzing contradiction has developed in human affairs. On the one hand, people of all nations proclaim not only their readiness but their longing for peace and harmony, for an end to the harrowing apprehensions tormenting their daily lives. On the other, uncritical assent is given to the proposition that human beings are incorrigibly selfish and aggressive and thus incapable of erecting a social system at once progressive and peaceful, dynamic and harmonious, a system giving free play to individual creativity and initiative but based on co-operation and reciprocity.
 
@@ -51,7 +53,10 @@ class MainApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         body: PaginatedExample(
-            text: text, style: style, dropCapStyle: dropCapStyle),
+          text: text,
+          style: style,
+          dropCapStyle: dropCapStyle,
+        ),
       ),
     );
   }
@@ -92,6 +97,10 @@ class _PaginatedExampleState extends State<PaginatedExample>
       dropCapLines: 3,
       style: widget.style,
       dropCapStyle: widget.dropCapStyle,
+      pageBreak: PageBreak.paragraph,
+      breakLines: 1,
+      resizeTolerance: 3,
+      parseInlineMarkdown: true,
     ));
     _googleFontsPending = GoogleFonts.pendingFonts([
       widget.style,
@@ -111,7 +120,7 @@ class _PaginatedExampleState extends State<PaginatedExample>
           final reverse = _controller.pageIndex < _controller.previousPageIndex;
 
           return Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             child: PaginatedText(
               _controller,
               builder: (context, child) {
