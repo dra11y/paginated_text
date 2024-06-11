@@ -1,3 +1,7 @@
+## 0.0.3
+* Fix typo in pubspec.yaml.
+* Make screen animated GIF smaller.
+
 ## 0.0.2
 * Fix pub.dev analyzer issues.
 
