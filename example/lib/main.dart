@@ -97,7 +97,7 @@ class _PaginatedExampleState extends State<PaginatedExample>
       dropCapLines: 3,
       style: widget.style,
       dropCapStyle: widget.dropCapStyle,
-      pageBreak: PageBreak.paragraph,
+      pageBreakType: PageBreakType.paragraph,
       breakLines: 1,
       resizeTolerance: 3,
       parseInlineMarkdown: true,

@@ -1,3 +1,8 @@
+## 0.1.0
+* Add manual / hard page break feature.
+* Fix computation of drop cap width temporarily (use default cap height).
+* Fix pagination to take textScaler and hard breaks into account .
+
 ## 0.0.4
 * Fix link to screen demo.
 

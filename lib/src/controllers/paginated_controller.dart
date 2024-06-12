@@ -1,8 +1,20 @@
-import 'dart:collection';
 import 'dart:math';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:paginated_text/src/constants.dart';
 import 'package:paginated_text/src/models/models.dart';
 import 'package:paginated_text/src/utils/fitted_text.dart';
+
+import '../utils/get_cap_font_size.dart';
+
+typedef OnPaginateCallback = void Function(PaginatedController);
+
+class NextLinesData {
+  final List<String> lines;
+  final int nextPosition;
+
+  NextLinesData({required this.lines, required this.nextPosition});
+}
 
 /// The controller with `ChangeNotifier` that computes the text pages from `PaginateData`.
 class PaginatedController with ChangeNotifier {
@@ -52,7 +64,9 @@ class PaginatedController with ChangeNotifier {
   int _maxLinesPerPage = 0;
   double _lineHeight = 0.0;
 
-  PaginatedController(this._data) : _layoutSize = Size.zero;
+  OnPaginateCallback? onPaginate;
+
+  PaginatedController(this._data, {this.onPaginate}) : _layoutSize = Size.zero;
 
   /// Tells the controller to update its `layoutSize`. Causes repagination if needed.
   void updateLayoutSize(Size layoutSize) {
@@ -104,119 +118,167 @@ class PaginatedController with ChangeNotifier {
     _paginate(data, layoutSize);
   }
 
+  NextLinesData _getNextLines({
+    required bool autoPageBreak,
+    required int textPosition,
+    required double width,
+    required int maxLines,
+  }) {
+    final String currentText = _data.text.substring(textPosition);
+    final fittedLines = FittedText.fit(
+      text: currentText,
+      width: width,
+      style: _data.style,
+      textScaler: _data.textScaler,
+      textDirection: _data.textDirection,
+      maxLines: maxLines,
+    );
+
+    final fittedText = fittedLines.lines.join();
+
+    final hardPageBreak = _data.hardPageBreak;
+    final firstPageBreak = hardPageBreak.allMatches(fittedText).firstOrNull;
+
+    if (firstPageBreak != null) {
+      final lineIndex =
+          fittedLines.lines.indexWhere((line) => line.contains(hardPageBreak));
+      final List<String> lines = fittedLines.lines
+          .sublist(0, lineIndex)
+          .mapIndexed((index, line) => lineIndex == index
+              ? line.substring(0, line.indexOf(hardPageBreak))
+              : line)
+          .toList();
+
+      return NextLinesData(
+        lines: lines,
+        nextPosition: textPosition + firstPageBreak.end + 1,
+      );
+    }
+
+    if (!autoPageBreak ||
+        !fittedLines.didExceedMaxLines ||
+        _data.pageBreakType == PageBreakType.word) {
+      return NextLinesData(
+        lines: fittedLines.lines,
+        nextPosition: textPosition + fittedText.length,
+      );
+    }
+
+    final List<String> lines = [...fittedLines.lines];
+
+    final pageBreakIndex = PageBreakType.values.indexOf(_data.pageBreakType);
+    final minBreakLine = lines.length - min(lines.length, _data.breakLines);
+
+    int nextPosition = textPosition + fittedText.length;
+
+    pageBreakLoop:
+    for (int pb = pageBreakIndex; pb > 0; pb--) {
+      final pageBreak = PageBreakType.values[pb].regex;
+      for (int i = lines.length - 1; i >= minBreakLine; i--) {
+        final match = pageBreak.allMatches(lines[i]).lastOrNull;
+        if (match != null) {
+          final line = lines[i].substring(0, match.end);
+          lines[i] = line;
+          if (i < lines.length - 1) {
+            lines.removeRange(i + 1, lines.length);
+          }
+          nextPosition = textPosition + lines.join().length;
+          break pageBreakLoop;
+        }
+      }
+    }
+
+    return NextLinesData(
+      lines: lines,
+      nextPosition: nextPosition,
+    );
+  }
+
   void _paginate(PaginateData data, Size layoutSize) {
     _data = data;
     _layoutSize = layoutSize;
-
     _pages.clear();
 
     if (layoutSize == Size.zero || data.text.isEmpty) {
       _pages.add(PageInfo.empty);
-      notifyListeners();
+      _notifyPaginate();
       return;
     }
-
-    final lineHeight =
-        (data.style.height ?? 1.0) * (data.style.fontSize ?? 14.0);
+    final lineHeight = data.textScaler.scale(data.style.fontSize ?? 14.0) *
+        (data.style.height ?? 1.0);
     _lineHeight = lineHeight;
     final maxLinesPerPage =
         max(data.dropCapLines, (layoutSize.height / lineHeight).floor());
     _maxLinesPerPage = maxLinesPerPage;
 
     int pageIndex = 0;
-    int remainingLinesOnPage = maxLinesPerPage;
-
-    FittedText? fittedCapLines;
     int textPosition = 0;
 
-    if (data.dropCapLines > 0) {
-      final capStyle = data.dropCapStyle;
-      final capSpan = TextSpan(
-        text: data.text.characters.first,
-        style: capStyle,
-      );
-      final capPainter = TextPainter(
-        text: capSpan,
-        textDirection: data.textDirection,
-      )..layout();
-
-      fittedCapLines = FittedText.fit(
-        text: data.text.substring(1),
-        width: layoutSize.width - capPainter.width,
-        style: data.style,
-        textScaler: data.textScaler,
-        textDirection: data.textDirection,
-        maxLines: min(maxLinesPerPage, data.dropCapLines),
-      );
-      final text = data.text.characters.first + fittedCapLines.lines.join();
-      final lines = fittedCapLines.lines.length;
-      textPosition = text.length;
-      remainingLinesOnPage -= data.dropCapLines;
-
-      // If all our text fits in the drop cap lines:
-      if (textPosition >= data.text.length || remainingLinesOnPage < 1) {
-        final pageInfo = PageInfo(
-          pageIndex: pageIndex,
-          text: text,
-          lines: lines,
-        );
-        _pages.add(pageInfo);
-        _pageIndex = min(_pageIndex, _pages.length - 1);
-        notifyListeners();
-        return;
-      }
-    }
-
     while (textPosition < data.text.length) {
-      final fittedLines = FittedText.fit(
-        text: data.text.substring(textPosition),
+      String capChars = '';
+      List<String> dropCapLines = [];
+
+      if (textPosition == 0 && data.dropCapLines > 0) {
+        capChars = data.text.substring(0, 1);
+        textPosition += capChars.length;
+
+        final wantedCapFontSize = getCapFontSize(
+          textFontSize: data.style.fontSize ?? 14,
+          lineHeight: data.style.height ?? 1.0,
+          capLines: data.dropCapLines,
+          textLetterHeightRatio: defaultLetterHeightRatio,
+          capLetterHeightRatio: defaultLetterHeightRatio,
+        );
+        final capStyle = (data.dropCapStyle ?? data.style).copyWith(
+          fontSize: wantedCapFontSize,
+        );
+        final capSpan = TextSpan(
+          text: capChars,
+          style: capStyle,
+        );
+        final capPainter = TextPainter(
+          text: capSpan,
+          textScaler: data.textScaler,
+          textDirection: data.textDirection,
+        )..layout();
+        final nextLinesData = _getNextLines(
+          autoPageBreak: false,
+          textPosition: textPosition,
+          width: layoutSize.width - capPainter.width,
+          maxLines: min(maxLinesPerPage, data.dropCapLines),
+        );
+        dropCapLines = nextLinesData.lines;
+        textPosition = nextLinesData.nextPosition;
+      }
+
+      final remainingLinesOnPage = maxLinesPerPage - dropCapLines.length;
+      final nextLinesData = _getNextLines(
+        autoPageBreak: true,
+        textPosition: textPosition,
         width: layoutSize.width,
-        style: data.style,
-        textScaler: data.textScaler,
-        textDirection: data.textDirection,
         maxLines: remainingLinesOnPage,
       );
-      if (pageIndex == 0) {
-        textPosition = 0;
-      }
-      final List<String> dropCapLines =
-          pageIndex == 0 ? fittedCapLines?.lines ?? [] : [];
-      final firstChar = pageIndex == 0 ? data.text.characters.first : '';
-      final List<String> lines = dropCapLines + fittedLines.lines;
-      final minBreakLine = lines.length - min(lines.length, data.breakLines);
-      final pageBreakIndex = PageBreak.values.indexOf(data.pageBreak);
+      final nextLines = nextLinesData.lines;
 
-      String text = firstChar + lines.join();
-      int numLines = lines.length;
-
-      pageBreakLoop:
-      for (int pb = pageBreakIndex; pb > 0; pb--) {
-        final pageBreak = PageBreak.values[pb].regex;
-        for (int i = lines.length - 1; i >= minBreakLine; i--) {
-          final match = pageBreak.allMatches(lines[i]).lastOrNull;
-          if (match != null) {
-            text = firstChar +
-                lines.sublist(0, i).join() +
-                lines[i].substring(0, match.end);
-            numLines = i + 1;
-            break pageBreakLoop;
-          }
-        }
-      }
+      final text = capChars + dropCapLines.join() + nextLines.join();
+      final lines = dropCapLines.length + nextLines.length;
 
       final pageInfo = PageInfo(
         pageIndex: pageIndex,
         text: text,
-        lines: numLines,
+        lines: lines,
       );
       _pages.add(pageInfo);
-      textPosition += text.length;
-      remainingLinesOnPage = maxLinesPerPage;
+      textPosition = nextLinesData.nextPosition;
       pageIndex++;
     }
 
     _pageIndex = min(pageIndex, _pageIndex);
+    _notifyPaginate();
+  }
 
+  void _notifyPaginate() {
+    onPaginate?.call(this);
     notifyListeners();
   }
 }

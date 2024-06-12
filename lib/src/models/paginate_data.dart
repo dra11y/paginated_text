@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Determines how the page break should occur during pagination.
-enum PageBreak {
+enum PageBreakType {
   /// Break pages on the last visible word of the page.
   word,
 
@@ -22,10 +22,10 @@ enum PageBreak {
     return regex;
   }
 
-  static final Map<PageBreak, RegExp> _regexMap = {
-    PageBreak.sentenceFragment: RegExp(r'([.,;:—–]|--)\s*'),
-    PageBreak.sentence: RegExp(r'\.\s*'),
-    PageBreak.paragraph: RegExp(r'[\r\n]+\s*[\r\n]+\s*'),
+  static final Map<PageBreakType, RegExp> _regexMap = {
+    PageBreakType.sentenceFragment: RegExp(r'([.,;:—–]|--)\s*'),
+    PageBreakType.sentence: RegExp(r'\.[^a-z]*', caseSensitive: false),
+    PageBreakType.paragraph: RegExp(r'[\r\n\s*]{2,}'),
   };
 }
 
@@ -47,9 +47,14 @@ class PaginateData {
   final TextStyle? dropCapStyle;
 
   /// Attempts to split pages at the specified point.
-  /// Falls back to the previous `PageBreak` if not found within `breakLines`
+  /// Falls back to the next lower `PageBreakType` if not found within `breakLines`
   /// of the last visible line of the page.
-  final PageBreak pageBreak;
+  final PageBreakType pageBreakType;
+
+  /// Forces a page break when encountering this pattern.
+  /// If set to an empty string, there are no manual page breaks.
+  /// Defaults to "<page>".
+  final Pattern hardPageBreak;
 
   /// Considers only this many lines from the last visible for `pageBreak`.
   /// Defaults to 1 (the last line only).
@@ -74,7 +79,8 @@ class PaginateData {
     required this.style,
     required this.dropCapLines,
     this.dropCapStyle,
-    this.pageBreak = PageBreak.paragraph,
+    this.pageBreakType = PageBreakType.paragraph,
+    this.hardPageBreak = r'<page>',
     this.breakLines = 1,
     this.textDirection = TextDirection.ltr,
     this.textScaler = TextScaler.noScaling,
@@ -116,7 +122,7 @@ class PaginateData {
           style == other.style &&
           dropCapLines == other.dropCapLines &&
           dropCapStyle == other.dropCapStyle &&
-          pageBreak == other.pageBreak &&
+          pageBreakType == other.pageBreakType &&
           breakLines == other.breakLines &&
           textDirection == other.textDirection &&
           textScaler == other.textScaler &&

@@ -5,10 +5,12 @@ import 'package:paginated_text/src/extensions/line_metrics_extension.dart';
 class FittedText {
   final double height;
   final List<String> lines;
+  final bool didExceedMaxLines;
 
   const FittedText({
     required this.height,
     required this.lines,
+    required this.didExceedMaxLines,
   });
 
   static FittedText fit({
@@ -51,6 +53,7 @@ class FittedText {
     return FittedText(
       height: lineMetrics.last.bottom,
       lines: lines,
+      didExceedMaxLines: textPainter.didExceedMaxLines,
     );
   }
 }

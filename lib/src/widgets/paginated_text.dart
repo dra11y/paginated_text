@@ -16,6 +16,9 @@ class PaginatedText extends StatelessWidget {
     this.builder,
   });
 
+  @override
+  ValueKey get key => ValueKey(controller.currentPage);
+
   /// Called at layout time to construct the widget tree.
   ///
   /// The builder must not return null.
@@ -42,6 +45,7 @@ class PaginatedText extends StatelessWidget {
             dropCapStyle: controller.paginateData.dropCapStyle,
             dropCapChars: currentPage.pageIndex == 0 ? 1 : 0,
             capLines: controller.paginateData.dropCapLines,
+            textScaler: controller.paginateData.textScaler,
           );
         });
 

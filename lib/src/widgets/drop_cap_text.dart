@@ -3,6 +3,9 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:paginated_text/src/utils/get_cap_font_size.dart';
+
+import '../constants.dart';
 
 // Flutter Text Rendering
 // https://flutter.megathink.com/text/text-rendering
@@ -69,9 +72,6 @@ final letterHeightRatioCache = HashMap<CapFontData, double>();
 
 // Font size used to compute the letter height ratio.
 const double letterHeightCalcFontSize = 3600.0;
-
-// Default letter height ratio determined from unspecified font family.
-const double defaultLetterHeightRatio = 2536.0 / 3600.0;
 
 class DropCapText extends StatefulWidget {
   final String data;
@@ -142,11 +142,14 @@ class _DropCapTextState extends State<DropCapText> {
       CapFontData.fromStyle(textStyle),
       CapFontData(capFontFamily, capFontWeight, capFontStyle),
     ]);
-    final wantedCapLetterHeight = ((fontSize * height) * (widget.capLines - 1) +
-            (fontSize * textLetterHeightRatio))
-        .ceil();
-    final wantedCapFontSize =
-        (wantedCapLetterHeight / capLetterHeightRatio).ceilToDouble();
+
+    final wantedCapFontSize = getCapFontSize(
+      textFontSize: fontSize,
+      lineHeight: height,
+      capLines: widget.capLines,
+      textLetterHeightRatio: textLetterHeightRatio,
+      capLetterHeightRatio: capLetterHeightRatio,
+    );
 
     TextStyle capStyle = TextStyle(
       color: textStyle.color,
@@ -181,6 +184,7 @@ class _DropCapTextState extends State<DropCapText> {
           text: dropCapStr,
           style: capStyle,
         ),
+        textScaler: widget.textScaler,
         textDirection: widget.textDirection,
       )..layout();
       capWidth = capPainter.width;
@@ -303,6 +307,7 @@ class _DropCapTextState extends State<DropCapText> {
                                   textDirection: widget.textDirection,
                                   textAlign: widget.textAlign,
                                   maxLines: 1,
+                                  textScaler: widget.textScaler,
                                   text: TextSpan(
                                     text: dropCapStr,
                                     style: capStyle,

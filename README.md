@@ -39,7 +39,7 @@ enum PageBreak {
 
 ## Getting started
 
-This package has no dependencies other than Dart 3 / Flutter 3, and no platform-specific dependencies. (It could probably run in Dart / Flutter 2 but I don't intend to support older Flutter versions -- please fork in this case.)
+This package has no dependencies other than Dart 3 / Flutter 3 and `collection`, and no platform-specific dependencies. (It could probably run in Dart / Flutter 2 but I don't intend to support older Flutter versions -- please fork in this case.)
 
 ## Usage
 
