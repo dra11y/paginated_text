@@ -207,14 +207,17 @@ class _DropCapTextState extends State<DropCapText> {
     TextSpan textSpan = TextSpan(
       text: widget.parseInlineMarkdown ? null : remainingText,
       children: widget.parseInlineMarkdown ? mdRest!.toTextSpanList() : null,
-      style: textStyle.apply(
-          fontSizeFactor: MediaQuery.of(context).textScaler.scale(1)),
+      style: textStyle,
+      // style: textStyle.apply(
+      //     fontSizeFactor: MediaQuery.of(context).textScaler.scale(1)),
     );
 
     TextPainter textPainter = TextPainter(
-        textDirection: widget.textDirection,
-        text: textSpan,
-        textAlign: widget.textAlign);
+      textDirection: widget.textDirection,
+      text: textSpan,
+      textAlign: widget.textAlign,
+      textScaler: widget.textScaler,
+    );
     double lineHeight = textPainter.preferredLineHeight;
 
     final capLines = widget.capLines;
@@ -269,52 +272,50 @@ class _DropCapTextState extends State<DropCapText> {
                           border: Border.all(width: 2, color: Colors.white))
                       : null,
                   child: Row(
-                    textDirection: widget.dropCapPosition == null ||
-                            widget.dropCapPosition == DropCapPosition.start
-                        ? widget.textDirection
-                        : (widget.textDirection == TextDirection.ltr
-                            ? TextDirection.rtl
-                            : TextDirection.ltr),
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    textBaseline: TextBaseline.alphabetic,
+                    // textDirection: widget.dropCapPosition == null ||
+                    //         widget.dropCapPosition == DropCapPosition.start
+                    //     ? widget.textDirection
+                    //     : (widget.textDirection == TextDirection.ltr
+                    //         ? TextDirection.rtl
+                    //         : TextDirection.ltr),
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    // textBaseline: TextBaseline.alphabetic,
                     children: <Widget>[
-                      widget.dropCap != null
-                          ? Padding(
-                              padding: widget.dropCapPadding,
-                              child: widget.dropCap)
-                          : SizedOverflowBox(
+                      widget.dropCap ??
+                          SizedOverflowBox(
+                            alignment: Alignment.bottomLeft,
+                            size: Size(capWidth, 0),
+                            child: Container(
+                              clipBehavior: Clip.none,
+                              width: capWidth,
+                              height: capHeight,
+                              transform: Transform.translate(
+                                      offset:
+                                          Offset(0, textBaseline - capBaseline))
+                                  .transform,
+                              decoration: debug
+                                  ? BoxDecoration(
+                                      border: Border.all(
+                                        color: Colors.yellowAccent,
+                                        width: 2,
+                                      ),
+                                    )
+                                  : null,
                               alignment: Alignment.topLeft,
-                              size: Size(capWidth, height * capLines),
-                              child: Container(
-                                clipBehavior: Clip.none,
-                                width: capWidth,
-                                height: capHeight,
-                                padding: widget.dropCapPadding,
-                                transform: Transform.translate(
-                                        offset: Offset(
-                                            0, textBaseline - capBaseline))
-                                    .transform,
-                                decoration: debug
-                                    ? BoxDecoration(
-                                        border: Border.all(
-                                          color: Colors.yellowAccent,
-                                          width: 2,
-                                        ),
-                                      )
-                                    : null,
-                                alignment: Alignment.bottomLeft,
-                                child: RichText(
-                                  textDirection: widget.textDirection,
-                                  textAlign: widget.textAlign,
-                                  maxLines: 1,
-                                  textScaler: widget.textScaler,
-                                  text: TextSpan(
-                                    text: dropCapStr,
-                                    style: capStyle,
-                                  ),
+
+                              // Drop Cap Cap Itself
+                              child: Text.rich(
+                                TextSpan(
+                                  text: dropCapStr,
+                                  style: capStyle,
                                 ),
+                                textDirection: widget.textDirection,
+                                textAlign: widget.textAlign,
+                                maxLines: 1,
+                                textScaler: widget.textScaler,
                               ),
                             ),
+                          ),
                       Container(
                         padding: EdgeInsets.only(top: widget.indentation.dy),
                         width: boundsWidth,
@@ -326,13 +327,18 @@ class _DropCapTextState extends State<DropCapText> {
                                 ),
                               )
                             : null,
-                        height: widget.mode != DropCapMode.aside
-                            ? (lineHeight *
-                                    min(widget.maxLines ?? capLines,
-                                        capLines)) +
-                                widget.indentation.dy
-                            : null,
-                        child: RichText(
+                        // height: widget.mode != DropCapMode.aside
+                        //     ? (lineHeight *
+                        //             min(widget.maxLines ?? capLines,
+                        //                 capLines)) +
+                        //         widget.indentation.dy
+                        //     : null,
+                        //
+                        //
+
+                        // Drop Cap Lines
+                        child: Text.rich(
+                          textSpan,
                           overflow: (widget.maxLines == null ||
                                   (widget.maxLines! > capLines &&
                                       widget.overflow == TextOverflow.fade))
@@ -341,7 +347,7 @@ class _DropCapTextState extends State<DropCapText> {
                           maxLines: maxCapLines,
                           textDirection: widget.textDirection,
                           textAlign: widget.textAlign,
-                          text: textSpan,
+                          textScaler: widget.textScaler,
                         ),
                       ),
                     ],
@@ -359,12 +365,10 @@ class _DropCapTextState extends State<DropCapText> {
                       : null,
                   child: Padding(
                     padding: EdgeInsets.only(left: widget.indentation.dx),
-                    child: RichText(
-                      overflow: widget.overflow,
-                      maxLines: maxTextLines,
-                      textAlign: widget.textAlign,
-                      textDirection: widget.textDirection,
-                      text: TextSpan(
+
+                    // Rest of Text
+                    child: Text.rich(
+                      TextSpan(
                         text: widget.parseInlineMarkdown
                             ? null
                             : remainingText.substring(
@@ -372,11 +376,12 @@ class _DropCapTextState extends State<DropCapText> {
                         children: widget.parseInlineMarkdown
                             ? mdRest!.subchars(charIndexEnd).toTextSpanList()
                             : null,
-                        style: textStyle.apply(
-                          fontSizeFactor:
-                              MediaQuery.of(context).textScaler.scale(1),
-                        ),
+                        style: textStyle,
                       ),
+                      overflow: widget.overflow,
+                      maxLines: maxTextLines,
+                      textAlign: widget.textAlign,
+                      textDirection: widget.textDirection,
                     ),
                   ),
                 ),
@@ -402,6 +407,7 @@ class _DropCapTextState extends State<DropCapText> {
           fontSize: letterHeightCalcFontSize,
         ),
       ),
+      textScaler: TextScaler.noScaling,
       textDirection: widget.textDirection,
     )..layout();
     final recorder = PictureRecorder();
