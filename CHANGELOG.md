@@ -1,3 +1,7 @@
+## 0.2.0
+* Replace instances of `RichText` with `Text.rich` so that `PaginatedText` can be wrapped in a `SelectionArea` and made selectable.
+* Fix layout differences between `RichText` and `Text.rich`.
+
 ## 0.1.0
 * Add manual / hard page break feature.
 * Fix computation of drop cap width temporarily (use default cap height).
