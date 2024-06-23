@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:paginated_text/src/extensions/line_metrics_extension.dart';
 
@@ -42,11 +43,12 @@ class FittedText {
       );
 
     final List<LineMetrics> lineMetrics = textPainter.computeLineMetrics();
-    final List<String> lines = lineMetrics.map((line) {
-      final start = textPainter.getPositionForOffset(line.leftBaseline).offset;
-      final end =
-          1 + textPainter.getPositionForOffset(line.rightBaseline).offset;
-      final lineText = text.substring(start, min(end, text.length));
+    final List<String> lines = lineMetrics.mapIndexed((index, line) {
+      final lineStart = textPainter.getPositionForOffset(line.leftBaseline);
+      final boundary = textPainter.getLineBoundary(lineStart);
+      final lineText =
+          text.substring(boundary.start, min(boundary.end, text.length));
+      // debugPrint('line $index: |$lineText|');
       return lineText;
     }).toList();
 

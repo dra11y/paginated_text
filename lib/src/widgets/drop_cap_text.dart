@@ -328,19 +328,16 @@ class _DropCapTextState extends State<DropCapText> {
                                 alignment: Alignment.topLeft,
 
                                 // Drop Cap Cap Itself
-                                child: LayoutBuilder(
-                                    builder: (context, constraints) {
-                                  return Text.rich(
-                                    TextSpan(
-                                      text: dropCapStr,
-                                      style: capStyle,
-                                    ),
-                                    textDirection: widget.textDirection,
-                                    textAlign: widget.textAlign,
-                                    maxLines: 1,
-                                    textScaler: widget.textScaler,
-                                  );
-                                }),
+                                child: Text.rich(
+                                  TextSpan(
+                                    text: dropCapStr,
+                                    style: capStyle,
+                                  ),
+                                  textDirection: widget.textDirection,
+                                  textAlign: widget.textAlign,
+                                  maxLines: 1,
+                                  textScaler: widget.textScaler,
+                                ),
                               ),
                             ),
                         Container(
@@ -362,20 +359,18 @@ class _DropCapTextState extends State<DropCapText> {
                           //     : null,
 
                           // Drop Cap Lines
-                          child: LayoutBuilder(builder: (context, constraints) {
-                            return Text.rich(
-                              textSpan,
-                              overflow: (widget.maxLines == null ||
-                                      (widget.maxLines! > capLines &&
-                                          widget.overflow == TextOverflow.fade))
-                                  ? TextOverflow.clip
-                                  : widget.overflow,
-                              maxLines: maxCapLines,
-                              textDirection: widget.textDirection,
-                              textAlign: widget.textAlign,
-                              textScaler: widget.textScaler,
-                            );
-                          }),
+                          child: Text.rich(
+                            textSpan,
+                            overflow: (widget.maxLines == null ||
+                                    (widget.maxLines! > capLines &&
+                                        widget.overflow == TextOverflow.fade))
+                                ? TextOverflow.clip
+                                : widget.overflow,
+                            maxLines: maxCapLines,
+                            textDirection: widget.textDirection,
+                            textAlign: widget.textAlign,
+                            textScaler: widget.textScaler,
+                          ),
                         ),
                       ],
                     ),

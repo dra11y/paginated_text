@@ -1,3 +1,6 @@
+## 0.3.1
+* Fix `FittedText.fit`: replace end-of-line computation `getPositionForOffset` with `getLineBoundary` from start of line, because a Flutter bug gives the wrong offset (next line starting character) at the right end of the line, instead of the last offset in the line. `getLineBoundary` seems to fix it.
+
 ## 0.3.0
 * Replace hard-coded `textStyle` defaults with `DefaultTextStyle.of(context)` to fix bug that rendered lines wrapped earlier than computed lines, which resulted in text at the end of cap lines being cut off, especially when `textScaler` is something other than `TextScaler.noScaling`.
 
