@@ -46,8 +46,8 @@ class FittedText {
     final List<String> lines = lineMetrics.mapIndexed((index, line) {
       final lineStart = textPainter.getPositionForOffset(line.leftBaseline);
       final boundary = textPainter.getLineBoundary(lineStart);
-      final lineText =
-          text.substring(boundary.start, min(boundary.end, text.length));
+      final end = line.hardBreak ? boundary.end + 1 : boundary.end;
+      final lineText = text.substring(boundary.start, min(end, text.length));
       // debugPrint('line $index: |$lineText|');
       return lineText;
     }).toList();

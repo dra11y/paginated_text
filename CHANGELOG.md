@@ -1,3 +1,6 @@
+## 0.3.2
+* OK, not quite. Needed: `final end = line.hardBreak ? boundary.end + 1 : boundary.end;` because `getLineBoundary` does not include the newline! (Is it me, or are Flutter text metrics a bit cumbersome?)
+
 ## 0.3.1
 * Fix `FittedText.fit`: replace end-of-line computation `getPositionForOffset` with `getLineBoundary` from start of line, because a Flutter bug gives the wrong offset (next line starting character) at the right end of the line, instead of the last offset in the line. `getLineBoundary` seems to fix it.
 
