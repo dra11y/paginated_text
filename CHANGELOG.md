@@ -1,3 +1,6 @@
+## 0.3.0
+* Replace hard-coded `textStyle` defaults with `DefaultTextStyle.of(context)` to fix bug that rendered lines wrapped earlier than computed lines, which resulted in text at the end of cap lines being cut off, especially when `textScaler` is something other than `TextScaler.noScaling`.
+
 ## 0.2.0
 * Replace instances of `RichText` with `Text.rich` so that `PaginatedText` can be wrapped in a `SelectionArea` and made selectable.
 * Fix layout differences between `RichText` and `Text.rich`.
