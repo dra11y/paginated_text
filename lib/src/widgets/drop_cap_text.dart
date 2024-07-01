@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:paginated_text/src/utils/get_cap_font_size.dart';
 
 import '../constants.dart';
@@ -119,8 +120,11 @@ class DropCapText extends StatefulWidget {
 class _DropCapTextState extends State<DropCapText> {
   @override
   Widget build(BuildContext context) {
-    TextStyle textStyle =
+    final TextStyle textStyle =
         DefaultTextStyle.of(context).style.merge(widget.style);
+    final TextStyle dropCapStyle = DefaultTextStyle.of(context)
+        .style
+        .merge(widget.dropCapStyle ?? widget.style);
 
     if (widget.data == '') return Text(widget.data, style: textStyle);
 
@@ -139,11 +143,9 @@ class _DropCapTextState extends State<DropCapText> {
     final fontSize = textStyle.fontSize ?? 14.0;
     final height = textStyle.height ?? 1.0;
 
-    final capFontFamily =
-        widget.dropCapStyle?.fontFamily ?? textStyle.fontFamily;
-    final capFontWeight =
-        widget.dropCapStyle?.fontWeight ?? textStyle.fontWeight;
-    final capFontStyle = widget.dropCapStyle?.fontStyle ?? textStyle.fontStyle;
+    final capFontFamily = dropCapStyle.fontFamily ?? textStyle.fontFamily;
+    final capFontWeight = dropCapStyle.fontWeight ?? textStyle.fontWeight;
+    final capFontStyle = dropCapStyle.fontStyle ?? textStyle.fontStyle;
 
     final [textLetterHeightRatio, capLetterHeightRatio] =
         _getOrComputeLetterHeightRatios([
@@ -159,16 +161,10 @@ class _DropCapTextState extends State<DropCapText> {
       capLetterHeightRatio: capLetterHeightRatio,
     );
 
-    TextStyle capStyle = TextStyle(
-      color: textStyle.color,
+    final TextStyle capStyle = dropCapStyle.copyWith(
       fontSize: wantedCapFontSize,
-      fontFamily: textStyle.fontFamily,
-      fontWeight: textStyle.fontWeight,
-      fontStyle: textStyle.fontStyle,
       height: 1.0,
-    ).merge(widget.dropCapStyle).copyWith(
-          fontSize: wantedCapFontSize,
-        );
+    );
 
     double capWidth = 0, capHeight = 0;
 
@@ -302,21 +298,23 @@ class _DropCapTextState extends State<DropCapText> {
                       //     : (widget.textDirection == TextDirection.ltr
                       //         ? TextDirection.rtl
                       //         : TextDirection.ltr),
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      // crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       // textBaseline: TextBaseline.alphabetic,
                       children: <Widget>[
                         widget.dropCap ??
                             SizedOverflowBox(
-                              alignment: Alignment.bottomLeft,
+                              // alignment: Alignment.bottomLeft,
+                              alignment: Alignment.topLeft,
                               size: Size(capWidth, 0),
                               child: Container(
                                 clipBehavior: Clip.none,
                                 width: capWidth,
-                                height: capHeight,
+                                height:
+                                    capHeight + (textBaseline - capBaseline),
                                 transform: Transform.translate(
-                                        offset: Offset(
-                                            0, textBaseline - capBaseline))
-                                    .transform,
+                                  offset: Offset(0, textBaseline - capBaseline),
+                                ).transform,
                                 decoration: debug
                                     ? BoxDecoration(
                                         border: Border.all(
@@ -333,6 +331,7 @@ class _DropCapTextState extends State<DropCapText> {
                                     text: dropCapStr,
                                     style: capStyle,
                                   ),
+                                  overflow: TextOverflow.visible,
                                   textDirection: widget.textDirection,
                                   textAlign: widget.textAlign,
                                   maxLines: 1,

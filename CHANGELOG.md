@@ -1,3 +1,6 @@
+## 0.3.3
+* FIX: Apply `dropCapStyle` to drop cap, and fix alignment issues when `dropCapStyle` is specified.
+
 ## 0.3.2
 * OK, not quite. Needed: `final end = line.hardBreak ? boundary.end + 1 : boundary.end;` because `getLineBoundary` does not include the newline! (Is it me, or are Flutter text metrics a bit cumbersome?)
 

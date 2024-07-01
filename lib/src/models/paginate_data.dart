@@ -46,6 +46,9 @@ class PaginateData {
   /// The style, if different than `style`, for the drop cap.
   final TextStyle? dropCapStyle;
 
+  /// Extra padding to add around drop cap letter.
+  final EdgeInsets dropCapPadding;
+
   /// Attempts to split pages at the specified point.
   /// Falls back to the next lower `PageBreakType` if not found within `breakLines`
   /// of the last visible line of the page.
@@ -79,6 +82,7 @@ class PaginateData {
     required this.style,
     required this.dropCapLines,
     this.dropCapStyle,
+    this.dropCapPadding = EdgeInsets.zero,
     this.pageBreakType = PageBreakType.paragraph,
     this.hardPageBreak = r'<page>',
     this.breakLines = 1,

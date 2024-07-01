@@ -43,6 +43,7 @@ class PaginatedText extends StatelessWidget {
             parseInlineMarkdown: controller.paginateData.parseInlineMarkdown,
             style: controller.paginateData.style,
             dropCapStyle: controller.paginateData.dropCapStyle,
+            dropCapPadding: controller.paginateData.dropCapPadding,
             dropCapChars: currentPage.pageIndex == 0 ? 1 : 0,
             capLines: controller.paginateData.dropCapLines,
             textScaler: controller.paginateData.textScaler,
