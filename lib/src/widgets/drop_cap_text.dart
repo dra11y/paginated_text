@@ -3,7 +3,6 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:paginated_text/src/utils/get_cap_font_size.dart';
 
 import '../constants.dart';
