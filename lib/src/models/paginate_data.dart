@@ -131,4 +131,22 @@ class PaginateData {
           textDirection == other.textDirection &&
           textScaler == other.textScaler &&
           resizeTolerance == other.resizeTolerance);
+
+  @override
+  String toString() => [
+        '$runtimeType(',
+        '    text: $text',
+        '    style: $style',
+        '    dropCapLines: $dropCapLines',
+        '    dropCapStyle: $dropCapStyle',
+        '    dropCapPadding: $dropCapPadding',
+        '    pageBreakType: $pageBreakType',
+        '    hardPageBreak: $hardPageBreak',
+        '    breakLines: $breakLines',
+        '    textDirection: $textDirection',
+        '    textScaler: $textScaler',
+        '    resizeTolerance: $resizeTolerance',
+        '    parseInlineMarkdown: $parseInlineMarkdown',
+        ')',
+      ].join('\n');
 }

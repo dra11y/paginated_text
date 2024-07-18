@@ -1,3 +1,9 @@
+## 0.4.0
+* FIX: Add defaultMaxLinesPerPage argument to the controller and default to a reasonable value like 10 so it doesn't initially throw error if used in a Text widget.
+  - TODO: Should be based on estimated line height...
+* FIX: Use the LayoutBuilder even when builder: is used so that the pagination data is available to the parent and child widgets.
+* FIX: Handle dropCapLines = 0 properly.
+
 ## 0.3.3
 * FIX: Apply `dropCapStyle` to drop cap, and fix alignment issues when `dropCapStyle` is specified.
 

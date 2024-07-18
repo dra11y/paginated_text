@@ -12,12 +12,33 @@ typedef OnPaginateCallback = void Function(PaginatedController);
 class NextLinesData {
   final List<String> lines;
   final int nextPosition;
+  final bool didExceedMaxLines;
 
-  NextLinesData({required this.lines, required this.nextPosition});
+  NextLinesData({
+    required this.lines,
+    required this.nextPosition,
+    required this.didExceedMaxLines,
+  });
+
+  @override
+  String toString() => [
+        '$runtimeType(',
+        '    lines: $lines,',
+        '    nextPosition: $nextPosition,',
+        '    didExceedMaxLines: $didExceedMaxLines,',
+        ')',
+      ].join('\n');
 }
 
 /// The controller with `ChangeNotifier` that computes the text pages from `PaginateData`.
 class PaginatedController with ChangeNotifier {
+  PaginatedController(
+    this._data, {
+    this.onPaginate,
+    int defaultMaxLinesPerPage = 10,
+  })  : _layoutSize = Size.zero,
+        _maxLinesPerPage = defaultMaxLinesPerPage;
+
   /// The data this controller was instantiated with.
   PaginateData get paginateData => _data;
 
@@ -61,12 +82,10 @@ class PaginatedController with ChangeNotifier {
   final List<PageInfo> _pages = [];
   int _pageIndex = 0;
   int _previousPageIndex = 0;
-  int _maxLinesPerPage = 0;
+  int _maxLinesPerPage;
   double _lineHeight = 0.0;
 
   OnPaginateCallback? onPaginate;
-
-  PaginatedController(this._data, {this.onPaginate}) : _layoutSize = Size.zero;
 
   /// Tells the controller to update its `layoutSize`. Causes repagination if needed.
   void updateLayoutSize(Size layoutSize) {
@@ -125,7 +144,7 @@ class PaginatedController with ChangeNotifier {
     required int maxLines,
   }) {
     final String currentText = _data.text.substring(textPosition);
-    final fittedLines = FittedText.fit(
+    final fittedText = FittedText.fit(
       text: currentText,
       width: width,
       style: _data.style,
@@ -134,15 +153,15 @@ class PaginatedController with ChangeNotifier {
       maxLines: maxLines,
     );
 
-    final fittedText = fittedLines.lines.join();
+    final fittedString = fittedText.lines.join();
 
     final hardPageBreak = _data.hardPageBreak;
-    final firstPageBreak = hardPageBreak.allMatches(fittedText).firstOrNull;
+    final firstPageBreak = hardPageBreak.allMatches(fittedString).firstOrNull;
 
     if (firstPageBreak != null) {
       final lineIndex =
-          fittedLines.lines.indexWhere((line) => line.contains(hardPageBreak));
-      final List<String> lines = fittedLines.lines
+          fittedText.lines.indexWhere((line) => line.contains(hardPageBreak));
+      final List<String> lines = fittedText.lines
           .sublist(0, lineIndex)
           .mapIndexed((index, line) => lineIndex == index
               ? line.substring(0, line.indexOf(hardPageBreak))
@@ -152,24 +171,26 @@ class PaginatedController with ChangeNotifier {
       return NextLinesData(
         lines: lines,
         nextPosition: textPosition + firstPageBreak.end + 1,
+        didExceedMaxLines: fittedText.didExceedMaxLines,
       );
     }
 
     if (!autoPageBreak ||
-        !fittedLines.didExceedMaxLines ||
+        !fittedText.didExceedMaxLines ||
         _data.pageBreakType == PageBreakType.word) {
       return NextLinesData(
-        lines: fittedLines.lines,
-        nextPosition: textPosition + fittedText.length,
+        lines: fittedText.lines,
+        nextPosition: textPosition + fittedString.length,
+        didExceedMaxLines: fittedText.didExceedMaxLines,
       );
     }
 
-    final List<String> lines = [...fittedLines.lines];
+    final List<String> lines = [...fittedText.lines];
 
     final pageBreakIndex = PageBreakType.values.indexOf(_data.pageBreakType);
     final minBreakLine = lines.length - min(lines.length, _data.breakLines);
 
-    int nextPosition = textPosition + fittedText.length;
+    int nextPosition = textPosition + fittedString.length;
 
     pageBreakLoop:
     for (int pb = pageBreakIndex; pb > 0; pb--) {
@@ -191,6 +212,7 @@ class PaginatedController with ChangeNotifier {
     return NextLinesData(
       lines: lines,
       nextPosition: nextPosition,
+      didExceedMaxLines: fittedText.didExceedMaxLines,
     );
   }
 
@@ -217,6 +239,7 @@ class PaginatedController with ChangeNotifier {
     while (textPosition < data.text.length) {
       String capChars = '';
       List<String> dropCapLines = [];
+      bool didExceedDropCapLines = false;
 
       if (textPosition == 0 && data.dropCapLines > 0) {
         capChars = data.text.substring(0, 1);
@@ -249,16 +272,22 @@ class PaginatedController with ChangeNotifier {
         );
         dropCapLines = nextLinesData.lines;
         textPosition = nextLinesData.nextPosition;
+        didExceedDropCapLines = nextLinesData.didExceedMaxLines;
       }
 
-      final remainingLinesOnPage = maxLinesPerPage - dropCapLines.length;
-      final nextLinesData = _getNextLines(
-        autoPageBreak: true,
-        textPosition: textPosition,
-        width: layoutSize.width,
-        maxLines: remainingLinesOnPage,
-      );
-      final nextLines = nextLinesData.lines;
+      List<String> nextLines = [];
+
+      if (didExceedDropCapLines || data.dropCapLines == 0) {
+        final remainingLinesOnPage = maxLinesPerPage - dropCapLines.length;
+        final nextLinesData = _getNextLines(
+          autoPageBreak: true,
+          textPosition: textPosition,
+          width: layoutSize.width,
+          maxLines: remainingLinesOnPage,
+        );
+        nextLines = nextLinesData.lines;
+        textPosition = nextLinesData.nextPosition;
+      }
 
       final text = capChars + dropCapLines.join() + nextLines.join();
       final lines = dropCapLines.length + nextLines.length;
@@ -269,7 +298,6 @@ class PaginatedController with ChangeNotifier {
         lines: lines,
       );
       _pages.add(pageInfo);
-      textPosition = nextLinesData.nextPosition;
       pageIndex++;
     }
 

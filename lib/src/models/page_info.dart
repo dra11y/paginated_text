@@ -31,5 +31,5 @@ class PageInfo {
 
   @override
   String toString() =>
-      'PageInfo(pageIndex: $pageIndex, text.length: ${text.length}, lines: $lines)';
+      '$runtimeType(pageIndex: $pageIndex, text.length: ${text.length}, lines: $lines)';
 }

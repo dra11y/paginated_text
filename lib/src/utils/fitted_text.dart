@@ -48,14 +48,22 @@ class FittedText {
       final boundary = textPainter.getLineBoundary(lineStart);
       final end = line.hardBreak ? boundary.end + 1 : boundary.end;
       final lineText = text.substring(boundary.start, min(end, text.length));
-      // debugPrint('line $index: |$lineText|');
       return lineText;
     }).toList();
 
     return FittedText(
-      height: lineMetrics.last.bottom,
+      height: lineMetrics.lastOrNull?.bottom ?? 0,
       lines: lines,
       didExceedMaxLines: textPainter.didExceedMaxLines,
     );
   }
+
+  @override
+  String toString() => [
+        '$runtimeType(',
+        '    height: $height,',
+        '    lines: $lines,',
+        '    didExceedMaxLines: $didExceedMaxLines,',
+        ')',
+      ].join('\n');
 }

@@ -62,7 +62,7 @@ class CapFontData {
 
   @override
   String toString() =>
-      'CapFontData(fontFamily: $fontFamily, fontWeight: $fontWeight, fontStyle: $fontStyle)';
+      '$runtimeType(fontFamily: $fontFamily, fontWeight: $fontWeight, fontStyle: $fontStyle)';
 }
 
 const bool debug = false;
@@ -88,7 +88,6 @@ class DropCapText extends StatefulWidget {
   final bool parseInlineMarkdown;
   final TextDirection textDirection;
   final DropCapPosition? dropCapPosition;
-  final int dropCapChars;
   final int? maxLines;
   final TextOverflow overflow;
 
@@ -104,7 +103,6 @@ class DropCapText extends StatefulWidget {
     this.dropCap,
     this.dropCapPadding = EdgeInsets.zero,
     this.indentation = Offset.zero,
-    this.dropCapChars = 1,
     this.parseInlineMarkdown = false,
     this.textDirection = TextDirection.ltr,
     this.overflow = TextOverflow.clip,
@@ -128,7 +126,8 @@ class _DropCapTextState extends State<DropCapText> {
     if (widget.data == '') return Text(widget.data, style: textStyle);
 
     final capLines = widget.capLines;
-    int dropCapChars = widget.dropCap != null ? 0 : widget.dropCapChars;
+    final int dropCapChars =
+        widget.dropCap == null && widget.capLines > 0 ? 1 : 0;
 
     MarkdownParser? mdData =
         widget.parseInlineMarkdown ? MarkdownParser(widget.data) : null;
@@ -136,8 +135,7 @@ class _DropCapTextState extends State<DropCapText> {
     final String dropCapStr =
         (mdData?.plainText ?? widget.data).substring(0, dropCapChars);
 
-    final shouldComputeDropCapLines =
-        capLines > 0 && dropCapChars > 0 && dropCapStr.isNotEmpty;
+    final hasDropCapLines = capLines > 0 && dropCapStr.isNotEmpty;
 
     final fontSize = textStyle.fontSize ?? 14.0;
     final height = textStyle.height ?? 1.0;
@@ -165,10 +163,11 @@ class _DropCapTextState extends State<DropCapText> {
       height: 1.0,
     );
 
-    double capWidth = 0, capHeight = 0;
-
+    double capWidth = 0;
+    double capHeight = 0;
     TextPainter? capPainter;
     double capBaseline = 0;
+    bool didExceedCapLines = false;
 
     // compute drop cap padding
     capWidth += widget.dropCapPadding.left + widget.dropCapPadding.right;
@@ -181,7 +180,7 @@ class _DropCapTextState extends State<DropCapText> {
     }
 
     // auto drop cap
-    else if (shouldComputeDropCapLines) {
+    else if (hasDropCapLines) {
       capPainter = TextPainter(
         text: TextSpan(
           text: dropCapStr,
@@ -227,19 +226,10 @@ class _DropCapTextState extends State<DropCapText> {
         int capLinesEndIndex = 0;
         double textBaseline = capBaseline;
 
-        if (shouldComputeDropCapLines) {
-          // textPainter.layout(maxWidth: boundsWidth);
-          // double yPos = capLines * lineHeight;
-          // int charIndex =
-          //     textPainter.getPositionForOffset(Offset(0, yPos)).offset;
-          // textPainter.maxLines = capLines;
-          // textPainter.layout(maxWidth: boundsWidth);
+        if (hasDropCapLines) {
           textPainter
             ..maxLines = capLines
             ..layout(maxWidth: boundsWidth);
-          // if (textPainter.didExceedMaxLines) {
-          //   charIndexEnd = charIndex;
-          // }
           final textLines = textPainter.computeLineMetrics();
           if (debug) {
             for (final (index, line) in textLines.indexed) {
@@ -253,7 +243,8 @@ class _DropCapTextState extends State<DropCapText> {
               debugPrint('line $index: ${remainingText.substring(start, end)}');
             }
           }
-          if (textLines.length >= capLines) {
+          didExceedCapLines = textLines.length >= capLines;
+          if (didExceedCapLines) {
             final lastCapLine = textLines[capLines - 1];
             textBaseline = lastCapLine.baseline;
             capLinesEndIndex = 1 +
@@ -270,8 +261,7 @@ class _DropCapTextState extends State<DropCapText> {
         }
 
         final maxLines = (constraints.maxHeight / lineHeight).floor();
-        final maxCapLines =
-            widget.dropCapChars > 0 ? min(capLines, maxLines) : 0;
+        final maxCapLines = capLines.clamp(0, maxLines);
         final maxTextLines = max(0, maxLines - maxCapLines);
 
         return Container(
@@ -284,7 +274,7 @@ class _DropCapTextState extends State<DropCapText> {
             maxHeight: constraints.maxHeight,
             child: Column(
               children: <Widget>[
-                if (shouldComputeDropCapLines)
+                if (hasDropCapLines)
                   Container(
                     decoration: debug
                         ? BoxDecoration(
@@ -373,7 +363,7 @@ class _DropCapTextState extends State<DropCapText> {
                       ],
                     ),
                   ),
-                if (maxTextLines > 0)
+                if (!hasDropCapLines || didExceedCapLines)
                   Container(
                     decoration: debug
                         ? BoxDecoration(

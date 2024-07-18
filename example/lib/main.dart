@@ -102,6 +102,7 @@ class _PaginatedExampleState extends State<PaginatedExample>
       resizeTolerance: 3,
       parseInlineMarkdown: true,
     ));
+
     _googleFontsPending = GoogleFonts.pendingFonts([
       widget.style,
       widget.dropCapStyle,
