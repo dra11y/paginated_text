@@ -1,3 +1,6 @@
+## 0.4.1
+* FIX: Endless loop / freeze in certain conditions; fix logic in paginated_controller.dart to break early if text does not exceed cap lines, and remove problematic if logic that was bypassed on second page of text.
+
 ## 0.4.0
 * FIX: Add defaultMaxLinesPerPage argument to the controller and default to a reasonable value like 10 so it doesn't initially throw error if used in a Text widget.
   - TODO: Should be based on estimated line height...

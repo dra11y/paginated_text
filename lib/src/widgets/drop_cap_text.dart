@@ -119,11 +119,14 @@ class _DropCapTextState extends State<DropCapText> {
   Widget build(BuildContext context) {
     final TextStyle textStyle =
         DefaultTextStyle.of(context).style.merge(widget.style);
+
     final TextStyle dropCapStyle = DefaultTextStyle.of(context)
         .style
         .merge(widget.dropCapStyle ?? widget.style);
 
-    if (widget.data == '') return Text(widget.data, style: textStyle);
+    if (widget.data == '') {
+      return Text(widget.data, style: textStyle);
+    }
 
     final capLines = widget.capLines;
     final int dropCapChars =
@@ -190,6 +193,7 @@ class _DropCapTextState extends State<DropCapText> {
         textScaler: widget.textScaler,
         textDirection: widget.textDirection,
       )..layout();
+
       capWidth += capPainter.width;
       capHeight += capPainter.height;
       final List<LineMetrics> lm = capPainter.computeLineMetrics();

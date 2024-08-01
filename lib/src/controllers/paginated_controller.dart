@@ -241,6 +241,7 @@ class PaginatedController with ChangeNotifier {
       List<String> dropCapLines = [];
       bool didExceedDropCapLines = false;
 
+      // compute drop cap lines
       if (textPosition == 0 && data.dropCapLines > 0) {
         capChars = data.text.substring(0, 1);
         textPosition += capChars.length;
@@ -273,21 +274,32 @@ class PaginatedController with ChangeNotifier {
         dropCapLines = nextLinesData.lines;
         textPosition = nextLinesData.nextPosition;
         didExceedDropCapLines = nextLinesData.didExceedMaxLines;
+
+        // If our text did not exceed the drop cap lines area, break:
+        if (!didExceedDropCapLines) {
+          final pageInfo = PageInfo(
+            pageIndex: pageIndex,
+            text: capChars + dropCapLines.join(),
+            lines: dropCapLines.length,
+          );
+          _pages.add(pageInfo);
+          pageIndex++;
+          break;
+        }
       }
 
       List<String> nextLines = [];
 
-      if (didExceedDropCapLines || data.dropCapLines == 0) {
-        final remainingLinesOnPage = maxLinesPerPage - dropCapLines.length;
-        final nextLinesData = _getNextLines(
-          autoPageBreak: true,
-          textPosition: textPosition,
-          width: layoutSize.width,
-          maxLines: remainingLinesOnPage,
-        );
-        nextLines = nextLinesData.lines;
-        textPosition = nextLinesData.nextPosition;
-      }
+      final remainingLinesOnPage = maxLinesPerPage - dropCapLines.length;
+      final nextLinesData = _getNextLines(
+        autoPageBreak: true,
+        textPosition: textPosition,
+        width: layoutSize.width,
+        maxLines: remainingLinesOnPage,
+      );
+
+      nextLines = nextLinesData.lines;
+      textPosition = nextLinesData.nextPosition;
 
       final text = capChars + dropCapLines.join() + nextLines.join();
       final lines = dropCapLines.length + nextLines.length;
