@@ -83,7 +83,6 @@ class DropCapText extends StatefulWidget {
   final TextAlign textAlign;
   final DropCap? dropCap;
   final EdgeInsets dropCapPadding;
-  final Offset indentation;
   // final bool forceNoDescent;
   final bool parseInlineMarkdown;
   final TextDirection textDirection;
@@ -102,7 +101,6 @@ class DropCapText extends StatefulWidget {
     this.textAlign = TextAlign.start,
     this.dropCap,
     this.dropCapPadding = EdgeInsets.zero,
-    this.indentation = Offset.zero,
     this.parseInlineMarkdown = false,
     this.textDirection = TextDirection.ltr,
     this.overflow = TextOverflow.clip,
@@ -202,6 +200,12 @@ class _DropCapTextState extends State<DropCapText> {
           lm.isNotEmpty ? lm[0].descent * 0.5 : capPainter.height * 0.2;
     }
 
+    // no drop cap
+    else {
+      capWidth = 0;
+      capHeight = 0;
+    }
+
     MarkdownParser? mdRest =
         widget.parseInlineMarkdown ? mdData!.subchars(dropCapChars) : null;
     String remainingText = widget.data.substring(dropCapChars);
@@ -225,7 +229,8 @@ class _DropCapTextState extends State<DropCapText> {
       label: widget.data,
       child: LayoutBuilder(
           builder: (BuildContext context, BoxConstraints constraints) {
-        final double boundsWidth = max(1.0, constraints.maxWidth - capWidth);
+        final double capLinesBoundsWidth =
+            max(1.0, constraints.maxWidth - capWidth);
 
         int capLinesEndIndex = 0;
         double textBaseline = capBaseline;
@@ -233,7 +238,7 @@ class _DropCapTextState extends State<DropCapText> {
         if (hasDropCapLines) {
           textPainter
             ..maxLines = capLines
-            ..layout(maxWidth: boundsWidth);
+            ..layout(maxWidth: capLinesBoundsWidth);
           final textLines = textPainter.computeLineMetrics();
           if (debug) {
             for (final (index, line) in textLines.indexed) {
@@ -333,8 +338,7 @@ class _DropCapTextState extends State<DropCapText> {
                               ),
                             ),
                         Container(
-                          padding: EdgeInsets.only(top: widget.indentation.dy),
-                          width: boundsWidth,
+                          width: capLinesBoundsWidth,
                           decoration: debug
                               ? BoxDecoration(
                                   border: Border.all(
@@ -343,16 +347,13 @@ class _DropCapTextState extends State<DropCapText> {
                                   ),
                                 )
                               : null,
-                          // height: widget.mode != DropCapMode.aside
-                          //     ? (lineHeight *
-                          //             min(widget.maxLines ?? capLines,
-                          //                 capLines)) +
-                          //         widget.indentation.dy
-                          //     : null,
 
                           // Drop Cap Lines
                           child: Text.rich(
                             textSpan,
+                            // If we specified TextOverflow.fade and exceed the cap lines,
+                            // we don't actually want to fade the cap lines, but rather the
+                            // remaining lines.
                             overflow: (widget.maxLines == null ||
                                     (widget.maxLines! > capLines &&
                                         widget.overflow == TextOverflow.fade))
@@ -377,29 +378,24 @@ class _DropCapTextState extends State<DropCapText> {
                             ),
                           )
                         : null,
-                    child: Padding(
-                      padding: EdgeInsets.only(left: widget.indentation.dx),
-
-                      // Rest of Text
-                      child: Text.rich(
-                        TextSpan(
-                          text: widget.parseInlineMarkdown
-                              ? null
-                              : remainingText.substring(
-                                  min(capLinesEndIndex, remainingText.length)),
-                          children: widget.parseInlineMarkdown
-                              ? mdRest!
-                                  .subchars(capLinesEndIndex)
-                                  .toTextSpanList()
-                              : null,
-                          style: textStyle,
-                        ),
-                        overflow: widget.overflow,
-                        maxLines: maxTextLines,
-                        textAlign: widget.textAlign,
-                        textDirection: widget.textDirection,
-                        textScaler: widget.textScaler,
+                    child: Text.rich(
+                      TextSpan(
+                        text: widget.parseInlineMarkdown
+                            ? null
+                            : remainingText.substring(
+                                min(capLinesEndIndex, remainingText.length)),
+                        children: widget.parseInlineMarkdown
+                            ? mdRest!
+                                .subchars(capLinesEndIndex)
+                                .toTextSpanList()
+                            : null,
                       ),
+                      overflow: widget.overflow,
+                      maxLines: maxTextLines,
+                      textAlign: widget.textAlign,
+                      textDirection: widget.textDirection,
+                      textScaler: widget.textScaler,
+                      style: textStyle,
                     ),
                   ),
               ],

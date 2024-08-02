@@ -1,6 +1,6 @@
 name: paginated_text
 description: "Takes a block of text, auto-paginates it based on the layout size, and optionally: adds an auto-sized drop cap on the first page and/or parses inline markdown."
-version: 0.4.1
+version: 0.4.2
 repository: https://github.com/dra11y/paginated_text.git
 
 environment:

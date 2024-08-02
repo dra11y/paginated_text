@@ -31,26 +31,26 @@ class PaginatedText extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
-        final child = DropCapText(
-          key: ValueKey(controller.currentPage.pageIndex),
-          controller.currentPage.text,
-          parseInlineMarkdown: controller.paginateData.parseInlineMarkdown,
-          style: controller.paginateData.style,
-          dropCapStyle: controller.paginateData.dropCapStyle,
-          dropCapPadding: controller.paginateData.dropCapPadding,
-          capLines: controller.currentPage.pageIndex == 0
-              ? controller.paginateData.dropCapLines
-              : 0,
-          textScaler: controller.paginateData.textScaler,
-        );
-
-        return LayoutBuilder(builder: (context, constraints) {
+        final child = LayoutBuilder(builder: (context, constraints) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             controller.updateLayoutSize(constraints.biggest);
           });
 
-          return builder?.call(context, child) ?? child;
+          return DropCapText(
+            key: ValueKey(controller.currentPage.pageIndex),
+            controller.currentPage.text,
+            parseInlineMarkdown: controller.paginateData.parseInlineMarkdown,
+            style: controller.paginateData.style,
+            dropCapStyle: controller.paginateData.dropCapStyle,
+            dropCapPadding: controller.paginateData.dropCapPadding,
+            capLines: controller.currentPage.pageIndex == 0
+                ? controller.paginateData.dropCapLines
+                : 0,
+            textScaler: controller.paginateData.textScaler,
+          );
         });
+
+        return builder?.call(context, child) ?? child;
       },
     );
   }

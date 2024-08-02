@@ -1,3 +1,9 @@
+## 0.4.2
+* FIX: Take cap padding into account in cap lines calculation.
+* FIX: Compute text layout width inside the child instead of outside to avoid layout inconsistencies.
+* FIX: Ensure FittedText.fit does not return lines that exceeded maxLines.
+* CHORE: Remove `DropCapText.indentation` and related `Padding` around the remaining text that would yield inconsistent display anyway. We can deal with consistent spacing/padding issues later.
+
 ## 0.4.1
 * FIX: Endless loop / freeze in certain conditions; fix logic in paginated_controller.dart to break early if text does not exceed cap lines, and remove problematic if logic that was bypassed on second page of text.
 

@@ -42,10 +42,19 @@ class FittedText {
         maxWidth: width,
       );
 
-    final List<LineMetrics> lineMetrics = textPainter.computeLineMetrics();
+    List<LineMetrics> lineMetrics = textPainter.computeLineMetrics();
+    if (textPainter.didExceedMaxLines) {
+      lineMetrics = lineMetrics.sublist(0, maxLines);
+    }
+
     final List<String> lines = lineMetrics.mapIndexed((index, line) {
       final lineStart = textPainter.getPositionForOffset(line.leftBaseline);
       final boundary = textPainter.getLineBoundary(lineStart);
+
+      /// from getLineBoundary: The newline (if any) is not returned as part of the range.
+      /// but calls Paragraph.getLineBoundary: The newline (if any) is returned as part of the range.
+      /// Which is it?
+      /// Through experimentation, the first is true.
       final end = line.hardBreak ? boundary.end + 1 : boundary.end;
       final lineText = text.substring(boundary.start, min(end, text.length));
       return lineText;

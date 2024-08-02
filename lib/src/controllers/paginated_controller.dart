@@ -156,9 +156,10 @@ class PaginatedController with ChangeNotifier {
     final fittedString = fittedText.lines.join();
 
     final hardPageBreak = _data.hardPageBreak;
-    final firstPageBreak = hardPageBreak.allMatches(fittedString).firstOrNull;
+    final firstHardPageBreak =
+        hardPageBreak.allMatches(fittedString).firstOrNull;
 
-    if (firstPageBreak != null) {
+    if (firstHardPageBreak != null) {
       final lineIndex =
           fittedText.lines.indexWhere((line) => line.contains(hardPageBreak));
       final List<String> lines = fittedText.lines
@@ -170,7 +171,7 @@ class PaginatedController with ChangeNotifier {
 
       return NextLinesData(
         lines: lines,
-        nextPosition: textPosition + firstPageBreak.end + 1,
+        nextPosition: textPosition + firstHardPageBreak.end + 1,
         didExceedMaxLines: fittedText.didExceedMaxLines,
       );
     }
@@ -198,8 +199,10 @@ class PaginatedController with ChangeNotifier {
       for (int i = lines.length - 1; i >= minBreakLine; i--) {
         final match = pageBreak.allMatches(lines[i]).lastOrNull;
         if (match != null) {
-          final line = lines[i].substring(0, match.end);
-          lines[i] = line;
+          if (match.end < lines[i].length) {
+            final line = lines[i].substring(0, match.end);
+            lines[i] = line;
+          }
           if (i < lines.length - 1) {
             lines.removeRange(i + 1, lines.length);
           }
@@ -268,7 +271,9 @@ class PaginatedController with ChangeNotifier {
         final nextLinesData = _getNextLines(
           autoPageBreak: false,
           textPosition: textPosition,
-          width: layoutSize.width - capPainter.width,
+          width: layoutSize.width -
+              capPainter.width -
+              data.dropCapPadding.horizontal,
           maxLines: min(maxLinesPerPage, data.dropCapLines),
         );
         dropCapLines = nextLinesData.lines;
