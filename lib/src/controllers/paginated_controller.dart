@@ -9,6 +9,8 @@ import '../utils/get_cap_font_size.dart';
 
 typedef OnPaginateCallback = void Function(PaginatedController);
 
+final _firstSpacesInLine = RegExp(r'^\s+');
+
 class NextLinesData {
   final List<String> lines;
   final int nextPosition;
@@ -164,6 +166,7 @@ class PaginatedController with ChangeNotifier {
           fittedText.lines.indexWhere((line) => line.contains(hardPageBreak));
       final List<String> lines = fittedText.lines
           .sublist(0, lineIndex)
+          // .skipWhile((line) => line.trim().isEmpty)
           .mapIndexed((index, line) => lineIndex == index
               ? line.substring(0, line.indexOf(hardPageBreak))
               : line)
@@ -176,38 +179,52 @@ class PaginatedController with ChangeNotifier {
       );
     }
 
+    // final List<String> lines =
+    //     fittedText.lines.skipWhile((line) => line.trim().isEmpty).toList();
+
+    final List<String> lines = fittedText.lines;
+
     if (!autoPageBreak ||
         !fittedText.didExceedMaxLines ||
         _data.pageBreakType == PageBreakType.word) {
       return NextLinesData(
-        lines: fittedText.lines,
+        lines: lines,
         nextPosition: textPosition + fittedString.length,
         didExceedMaxLines: fittedText.didExceedMaxLines,
       );
     }
-
-    final List<String> lines = [...fittedText.lines];
 
     final pageBreakIndex = PageBreakType.values.indexOf(_data.pageBreakType);
     final minBreakLine = lines.length - min(lines.length, _data.breakLines);
 
     int nextPosition = textPosition + fittedString.length;
 
-    pageBreakLoop:
-    for (int pb = pageBreakIndex; pb > 0; pb--) {
-      final pageBreak = PageBreakType.values[pb].regex;
-      for (int i = lines.length - 1; i >= minBreakLine; i--) {
-        final match = pageBreak.allMatches(lines[i]).lastOrNull;
-        if (match != null) {
-          if (match.end < lines[i].length) {
-            final line = lines[i].substring(0, match.end);
-            lines[i] = line;
+    // TODO: Test check for didExceedMaxLines
+    if (fittedText.didExceedMaxLines) {
+      pageBreakLoop:
+      for (int pb = pageBreakIndex; pb > 0; pb--) {
+        final pageBreak = PageBreakType.values[pb].regex;
+        for (int i = lines.length - 1; i >= minBreakLine; i--) {
+          final match = pageBreak.allMatches(lines[i]).lastOrNull;
+          if (match != null) {
+            // TODO: Test extraSpacesToSkipOnNextPage = 1. For some reason, we still need to remove an extra space.
+            int extraSpacesToSkipOnNextPage = 1;
+            if (match.end < lines[i].length) {
+              final line = lines[i].substring(0, match.end);
+              extraSpacesToSkipOnNextPage = _firstSpacesInLine
+                      .stringMatch(lines[i].substring(match.end))
+                      ?.length ??
+                  0;
+              lines[i] = line;
+            }
+            if (i < lines.length - 1) {
+              lines.removeRange(i + 1, lines.length);
+            }
+            nextPosition = textPosition +
+                lines.join().length +
+                extraSpacesToSkipOnNextPage;
+            break pageBreakLoop;
           }
-          if (i < lines.length - 1) {
-            lines.removeRange(i + 1, lines.length);
-          }
-          nextPosition = textPosition + lines.join().length;
-          break pageBreakLoop;
         }
       }
     }

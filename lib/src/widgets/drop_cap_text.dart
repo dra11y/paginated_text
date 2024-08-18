@@ -462,7 +462,9 @@ class _DropCapTextState extends State<DropCapText> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.wait(fontDatas.map((d) => _computeLetterHeightRatio(d)));
-      setState(() {});
+      if (mounted) {
+        setState(() {});
+      }
     });
 
     return fontDatas.map((d) => defaultLetterHeightRatio).toList();

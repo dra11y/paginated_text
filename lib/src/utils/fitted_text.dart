@@ -24,8 +24,22 @@ class FittedText {
   }) {
     assert(maxLines > 0, 'maxLines = $maxLines; must be > 0');
 
+    // Skip first empty line(s)
+    final textLines =
+        text.split('\n').skipWhile((line) => line.trim().isEmpty).toList();
+
+    // TODO: Test this! Remove final blank lines
+    for (int i = textLines.length - 1; i > 0; i--) {
+      if (textLines[i].trim().isNotEmpty) {
+        break;
+      }
+      textLines.removeAt(i);
+    }
+
+    final trimmedText = textLines.join('\n');
+
     final textSpan = TextSpan(
-      text: text,
+      text: trimmedText,
       style: style,
     );
 
@@ -56,9 +70,12 @@ class FittedText {
       /// Which is it?
       /// Through experimentation, the first is true.
       final end = line.hardBreak ? boundary.end + 1 : boundary.end;
-      final lineText = text.substring(boundary.start, min(end, text.length));
+      final lineText =
+          trimmedText.substring(boundary.start, min(end, trimmedText.length));
       return lineText;
     }).toList();
+
+    print('lines.last: ${lines.last}');
 
     return FittedText(
       height: lineMetrics.lastOrNull?.bottom ?? 0,
