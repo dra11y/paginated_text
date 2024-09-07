@@ -75,7 +75,7 @@ class FittedText {
       return lineText;
     }).toList();
 
-    print('lines.last: ${lines.last}');
+    // debugPrint('lines.last: ${lines.last}');
 
     return FittedText(
       height: lineMetrics.lastOrNull?.bottom ?? 0,
