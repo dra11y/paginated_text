@@ -9,7 +9,7 @@ import '../utils/get_cap_font_size.dart';
 
 typedef OnPaginateCallback = void Function(PaginatedController);
 
-final _firstSpacesInLine = RegExp(r'^\s+');
+final _reFirstSpacesInLine = RegExp(r'^\s+');
 
 class NextLinesData {
   final List<String> lines;
@@ -174,13 +174,12 @@ class PaginatedController with ChangeNotifier {
 
       return NextLinesData(
         lines: lines,
+        // nextPosition: textPosition + firstHardPageBreak.end,
+        // was this causing cutoff?
         nextPosition: textPosition + firstHardPageBreak.end + 1,
         didExceedMaxLines: fittedText.didExceedMaxLines,
       );
     }
-
-    // final List<String> lines =
-    //     fittedText.lines.skipWhile((line) => line.trim().isEmpty).toList();
 
     final List<String> lines = fittedText.lines;
 
@@ -199,7 +198,6 @@ class PaginatedController with ChangeNotifier {
 
     int nextPosition = textPosition + fittedString.length;
 
-    // TODO: Test check for didExceedMaxLines
     if (fittedText.didExceedMaxLines) {
       pageBreakLoop:
       for (int pb = pageBreakIndex; pb > 0; pb--) {
@@ -207,14 +205,15 @@ class PaginatedController with ChangeNotifier {
         for (int i = lines.length - 1; i >= minBreakLine; i--) {
           final match = pageBreak.allMatches(lines[i]).lastOrNull;
           if (match != null) {
-            // TODO: Test extraSpacesToSkipOnNextPage = 1. For some reason, we still need to remove an extra space.
-            int extraSpacesToSkipOnNextPage = 1;
+            // extraSpacesToSkipOnNextPage should initially be 0 to avoid cutting off the first letter on next page.
+            int extraSpacesToSkipOnNextPage = 0;
             if (match.end < lines[i].length) {
               final line = lines[i].substring(0, match.end);
-              extraSpacesToSkipOnNextPage = _firstSpacesInLine
-                      .stringMatch(lines[i].substring(match.end))
-                      ?.length ??
-                  0;
+              final firstSpacesOnNextPage = _reFirstSpacesInLine
+                  .stringMatch(lines[i].substring(match.end));
+              if (firstSpacesOnNextPage != null) {
+                extraSpacesToSkipOnNextPage = firstSpacesOnNextPage.length;
+              }
               lines[i] = line;
             }
             if (i < lines.length - 1) {

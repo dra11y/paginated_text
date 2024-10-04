@@ -1,3 +1,6 @@
+## 0.4.3
+* FIX: Set extraSpacesToSkipOnNextPage initially to 0 instead of 1 to prevent cutting off first letter on next page after wrapping to next page mid-sentence.
+
 ## 0.4.2
 * FIX: Take cap padding into account in cap lines calculation.
 * FIX: Compute text layout width inside the child instead of outside to avoid layout inconsistencies.
