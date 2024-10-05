@@ -166,7 +166,7 @@ class _PaginatedExampleState extends State<PaginatedExample>
                           'Page ${_controller.pageNumber} of ${_controller.numPages}',
                           style: widget.style.copyWith(fontSize: 24)),
                       const SizedBox(height: 20),
-                      ButtonBar(
+                      OverflowBar(
                         alignment: MainAxisAlignment.center,
                         children: [
                           TextButton(
