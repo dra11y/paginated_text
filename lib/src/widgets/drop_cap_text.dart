@@ -3,9 +3,11 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:paginated_text/src/utils/get_cap_font_size.dart';
 
 import '../constants.dart';
+import 'selection_delegate.dart';
 
 // Flutter Text Rendering
 // https://flutter.megathink.com/text/text-rendering
@@ -113,6 +115,16 @@ class DropCapText extends StatefulWidget {
 }
 
 class _DropCapTextState extends State<DropCapText> {
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final TextStyle textStyle =
@@ -273,7 +285,58 @@ class _DropCapTextState extends State<DropCapText> {
         final maxCapLines = capLines.clamp(0, maxLines);
         final maxTextLines = max(0, maxLines - maxCapLines);
 
-        return Container(
+        // Drop Cap Cap itself
+        final dropCapCap = Text.rich(
+          TextSpan(
+            text: dropCapStr,
+            style: capStyle,
+          ),
+          overflow: TextOverflow.visible,
+          textDirection: widget.textDirection,
+          textAlign: widget.textAlign,
+          maxLines: 1,
+          textScaler: widget.textScaler,
+        );
+
+        // Drop Cap Lines
+        // darn: A value of type 'Text' can't be assigned to a variable of type 'Selectable'.
+        // Try changing the type of the variable, or casting the right-hand type to 'Selectable'.dartinvalid_assignment
+        final dropCapLines = Text.rich(
+          textSpan,
+          // If we specified TextOverflow.fade and exceed the cap lines,
+          // we don't actually want to fade the cap lines, but rather the
+          // remaining lines.
+          overflow: (widget.maxLines == null ||
+                  (widget.maxLines! > capLines &&
+                      widget.overflow == TextOverflow.fade))
+              ? TextOverflow.clip
+              : widget.overflow,
+          maxLines: maxCapLines,
+          textDirection: widget.textDirection,
+          textAlign: widget.textAlign,
+          textScaler: widget.textScaler,
+        );
+
+        // Remaining Text
+        final remainingTextWidget = Text.rich(
+          TextSpan(
+            text: widget.parseInlineMarkdown
+                ? null
+                : remainingText
+                    .substring(min(capLinesEndIndex, remainingText.length)),
+            children: widget.parseInlineMarkdown
+                ? mdRest!.subchars(capLinesEndIndex).toTextSpanList()
+                : null,
+          ),
+          overflow: widget.overflow,
+          maxLines: maxTextLines,
+          textAlign: widget.textAlign,
+          textDirection: widget.textDirection,
+          textScaler: widget.textScaler,
+          style: textStyle,
+        );
+
+        final child = Container(
           decoration: debug
               ? BoxDecoration(border: Border.all(color: Colors.red, width: 2))
               : null,
@@ -324,17 +387,7 @@ class _DropCapTextState extends State<DropCapText> {
                                 alignment: Alignment.topLeft,
 
                                 // Drop Cap Cap Itself
-                                child: Text.rich(
-                                  TextSpan(
-                                    text: dropCapStr,
-                                    style: capStyle,
-                                  ),
-                                  overflow: TextOverflow.visible,
-                                  textDirection: widget.textDirection,
-                                  textAlign: widget.textAlign,
-                                  maxLines: 1,
-                                  textScaler: widget.textScaler,
-                                ),
+                                child: dropCapCap,
                               ),
                             ),
                         Container(
@@ -347,23 +400,7 @@ class _DropCapTextState extends State<DropCapText> {
                                   ),
                                 )
                               : null,
-
-                          // Drop Cap Lines
-                          child: Text.rich(
-                            textSpan,
-                            // If we specified TextOverflow.fade and exceed the cap lines,
-                            // we don't actually want to fade the cap lines, but rather the
-                            // remaining lines.
-                            overflow: (widget.maxLines == null ||
-                                    (widget.maxLines! > capLines &&
-                                        widget.overflow == TextOverflow.fade))
-                                ? TextOverflow.clip
-                                : widget.overflow,
-                            maxLines: maxCapLines,
-                            textDirection: widget.textDirection,
-                            textAlign: widget.textAlign,
-                            textScaler: widget.textScaler,
-                          ),
+                          child: dropCapLines,
                         ),
                       ],
                     ),
@@ -378,30 +415,23 @@ class _DropCapTextState extends State<DropCapText> {
                             ),
                           )
                         : null,
-                    child: Text.rich(
-                      TextSpan(
-                        text: widget.parseInlineMarkdown
-                            ? null
-                            : remainingText.substring(
-                                min(capLinesEndIndex, remainingText.length)),
-                        children: widget.parseInlineMarkdown
-                            ? mdRest!
-                                .subchars(capLinesEndIndex)
-                                .toTextSpanList()
-                            : null,
-                      ),
-                      overflow: widget.overflow,
-                      maxLines: maxTextLines,
-                      textAlign: widget.textAlign,
-                      textDirection: widget.textDirection,
-                      textScaler: widget.textScaler,
-                      style: textStyle,
-                    ),
+                    // Remaining Text
+                    child: remainingTextWidget,
                   ),
               ],
             ),
           ),
         );
+
+        final registrar = SelectionContainer.maybeOf(context);
+
+        return registrar != null
+            ? SelectionContainer(
+                delegate: ChildOrderedSelectionDelegate(),
+                registrar: registrar,
+                child: child,
+              )
+            : child;
       }),
     );
   }

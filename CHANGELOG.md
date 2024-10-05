@@ -1,3 +1,6 @@
+## 0.4.4
+* FIX/FEATURE: Proper selection ordering when surrounded with a `SelectionArea`. If the context was wrapped in a `SelectionArea`, sometimes the drop cap was out of order in the selection because the default Flutter selection ordering is by paint position. Therefore a new selection delegate has been introduced to make the order predictable and correct.
+
 ## 0.4.3
 * FIX: Set extraSpacesToSkipOnNextPage initially to 0 instead of 1 to prevent cutting off first letter on next page after wrapping to next page mid-sentence.
 

@@ -45,7 +45,8 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = pwp.trim();
     final style = GoogleFonts.notoSerif(fontSize: 36, height: 1.5);
-    final dropCapStyle = GoogleFonts.bellefair();
+    // final dropCapStyle = GoogleFonts.bellefair();
+    final dropCapStyle = GoogleFonts.calligraffitti();
 
     return MaterialApp(
       themeMode: ThemeMode.dark,
@@ -156,7 +157,7 @@ class _PaginatedExampleState extends State<PaginatedExample>
                           child: Padding(
                             key: ValueKey(_controller.currentPage.pageIndex),
                             padding: const EdgeInsets.all(40),
-                            child: child,
+                            child: SelectionArea(child: child),
                           ),
                         ),
                       ),
