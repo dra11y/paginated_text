@@ -1,3 +1,6 @@
+## 0.4.5
+* FIX: Remove extra space from joining SelectionContent plaintext.
+
 ## 0.4.4
 * FIX/FEATURE: Proper selection ordering when surrounded with a `SelectionArea`. If the context was wrapped in a `SelectionArea`, sometimes the drop cap was out of order in the selection because the default Flutter selection ordering is by paint position. Therefore a new selection delegate has been introduced to make the order predictable and correct.
 

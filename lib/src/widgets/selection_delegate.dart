@@ -27,7 +27,7 @@ class ChildOrderedSelectionDelegate
       return null;
     }
     return SelectedContent(
-      plainText: selections.map((s) => s.plainText).join(' '),
+      plainText: selections.map((s) => s.plainText).join(),
     );
   }
 
