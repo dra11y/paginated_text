@@ -115,17 +115,32 @@ class PaginateData {
       );
 
   @override
-  int get hashCode => Object.hash(text, style, dropCapLines, dropCapStyle,
-      textDirection, textScaler, resizeTolerance);
+  int get hashCode => Object.hash(
+        text,
+        style.stableHash,
+        dropCapLines,
+        dropCapStyle?.stableHash,
+        textDirection,
+        textScaler,
+        resizeTolerance,
+      );
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is PaginateData &&
           text == other.text &&
-          style == other.style &&
+          // style ==
+          //     other.style.copyWith(
+          //       background: _ignorePaintForHash,
+          //       foreground: _ignorePaintForHash,
+          //     ) &&
           dropCapLines == other.dropCapLines &&
-          dropCapStyle == other.dropCapStyle &&
+          // dropCapStyle ==
+          //     other.dropCapStyle?.copyWith(
+          //       background: _ignorePaintForHash,
+          //       foreground: _ignorePaintForHash,
+          //     ) &&
           pageBreakType == other.pageBreakType &&
           breakLines == other.breakLines &&
           textDirection == other.textDirection &&
@@ -149,4 +164,54 @@ class PaginateData {
         '    parseInlineMarkdown: $parseInlineMarkdown',
         ')',
       ].join('\n');
+}
+
+extension PaintStableHash on Paint {
+  /// Flutter [Paint.hashCode] is not stable because
+  /// [Paint] is not constant and it does not override [hashCode].
+  int get stableHash => Object.hashAll([
+        blendMode,
+        color,
+        colorFilter,
+        filterQuality,
+        imageFilter,
+        invertColors,
+        isAntiAlias,
+        maskFilter,
+        shader,
+        strokeCap,
+        strokeJoin,
+        strokeMiterLimit,
+        strokeWidth,
+        style,
+      ]);
+}
+
+extension TextStyleStableHash on TextStyle {
+  int get stableHash => Object.hashAll([
+        background?.stableHash,
+        backgroundColor,
+        color,
+        decoration,
+        decorationColor,
+        decorationStyle,
+        decorationThickness,
+        fontFamily,
+        fontFamilyFallback,
+        fontFeatures,
+        fontSize,
+        fontStyle,
+        fontVariations,
+        fontWeight,
+        foreground?.stableHash,
+        height,
+        inherit,
+        leadingDistribution,
+        letterSpacing,
+        locale,
+        overflow,
+        shadows,
+        textBaseline,
+        wordSpacing,
+      ]);
 }

@@ -120,13 +120,10 @@ class PaginatedController with ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sets the page explicitly to a given index. Throws a `RangeError` if out of range.
+  /// Sets the page explicitly to a given index, clamped to the range of pages.
   void setPageIndex(int pageIndex) {
-    if (pageIndex < 0 || pageIndex > _pages.length - 1) {
-      throw RangeError.range(pageIndex, 0, _pages.length - 1);
-    }
     _previousPageIndex = _pageIndex;
-    _pageIndex = pageIndex;
+    _pageIndex = pageIndex.clamp(0, _pages.length - 1);
     notifyListeners();
   }
 
@@ -197,33 +194,34 @@ class PaginatedController with ChangeNotifier {
     final minBreakLine = lines.length - min(lines.length, _data.breakLines);
 
     int nextPosition = textPosition + fittedString.length;
-
     if (fittedText.didExceedMaxLines) {
       pageBreakLoop:
       for (int pb = pageBreakIndex; pb > 0; pb--) {
         final pageBreak = PageBreakType.values[pb].regex;
         for (int i = lines.length - 1; i >= minBreakLine; i--) {
           final match = pageBreak.allMatches(lines[i]).lastOrNull;
-          if (match != null) {
-            // extraSpacesToSkipOnNextPage should initially be 0 to avoid cutting off the first letter on next page.
-            int extraSpacesToSkipOnNextPage = 0;
-            if (match.end < lines[i].length) {
-              final line = lines[i].substring(0, match.end);
-              final firstSpacesOnNextPage = _reFirstSpacesInLine
-                  .stringMatch(lines[i].substring(match.end));
-              if (firstSpacesOnNextPage != null) {
-                extraSpacesToSkipOnNextPage = firstSpacesOnNextPage.length;
-              }
-              lines[i] = line;
-            }
-            if (i < lines.length - 1) {
-              lines.removeRange(i + 1, lines.length);
-            }
-            nextPosition = textPosition +
-                lines.join().length +
-                extraSpacesToSkipOnNextPage;
-            break pageBreakLoop;
+          if (match == null) {
+            continue;
           }
+
+          // extraSpacesToSkipOnNextPage should initially be 0 to avoid cutting off the first letter on next page.
+          int extraSpacesToSkipOnNextPage = 0;
+          if (match.end < lines[i].length) {
+            final line = lines[i].substring(0, match.end);
+            final firstSpacesOnNextPage =
+                _reFirstSpacesInLine.stringMatch(lines[i].substring(match.end));
+            if (firstSpacesOnNextPage != null) {
+              extraSpacesToSkipOnNextPage = firstSpacesOnNextPage.length;
+            }
+            lines[i] = line;
+          }
+          if (i < lines.length - 1) {
+            lines.removeRange(i + 1, lines.length);
+          }
+          nextPosition =
+              textPosition + lines.join().length + extraSpacesToSkipOnNextPage;
+
+          break pageBreakLoop;
         }
       }
     }
@@ -255,7 +253,7 @@ class PaginatedController with ChangeNotifier {
     int pageIndex = 0;
     int textPosition = 0;
 
-    while (textPosition < data.text.length) {
+    while (textPosition < data.text.length - 1) {
       String capChars = '';
       List<String> dropCapLines = [];
       bool didExceedDropCapLines = false;

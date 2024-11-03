@@ -14,6 +14,8 @@ class ChildOrderedSelectionDelegate
   int _compareOrder(Selectable a, Selectable b) =>
       selectables.indexOf(a).compareTo(selectables.indexOf(b));
 
+  static bool _printedFlutterWarning = false;
+
   @override
   SelectedContent? getSelectedContent() {
     final List<SelectedContent> selections = <SelectedContent>[];
@@ -212,6 +214,29 @@ class ChildOrderedSelectionDelegate
         (Selectable selectable) => !selectableSet.contains(selectable));
     _hasReceivedStartEvent.removeWhere(
         (Selectable selectable) => !selectableSet.contains(selectable));
+    // The following assertion was thrown during a scheduler callback:
+    // The _selectionContainerContext must have a renderObject, such as after the first build has completed.
+    // 'package:flutter/src/widgets/selection_container.dart':
+    // Failed assertion: line 308 pos 5: '_selectionContainerContext?.findRenderObject() != null'
+
+    // Either the assertion indicates an error in the framework itself, or we should provide substantially
+    // more information in this error message to help you determine and fix the underlying cause.
+    // In either case, please report this assertion by filing a bug on GitHub:
+    //   https://github.com/flutter/flutter/issues/new?template=2_bug.yml
+
+    // TODO: Find root cause of this issue. Is it on our end or in Flutter?
+    try {
+      hasSize;
+    } catch (e) {
+      if (!_printedFlutterWarning) {
+        debugPrint(
+            'paginated_text: $runtimeType Warning: ignoring Flutter framework error that occurs '
+            'when we have a selection and flip between pages: "$e" '
+            'This warning will be suppressed for the remainder of this app run.');
+        _printedFlutterWarning = true;
+      }
+      return;
+    }
     super.didChangeSelectables();
   }
 

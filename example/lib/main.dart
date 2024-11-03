@@ -44,9 +44,9 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = pwp.trim();
-    final style = GoogleFonts.notoSerif(fontSize: 36, height: 1.5);
-    // final dropCapStyle = GoogleFonts.bellefair();
-    final dropCapStyle = GoogleFonts.calligraffitti();
+    final style = GoogleFonts.notoSerif(fontSize: 24, height: 1.5);
+    final dropCapStyle = GoogleFonts.bellefair();
+    // final dropCapStyle = GoogleFonts.calligraffitti();
 
     return MaterialApp(
       themeMode: ThemeMode.dark,
