@@ -152,85 +152,120 @@ class PaginatedController with ChangeNotifier {
       maxLines: maxLines,
     );
 
-    final fittedString = fittedText.lines.join();
-
-    final hardPageBreak = _data.hardPageBreak;
-    final firstHardPageBreak =
-        hardPageBreak.allMatches(fittedString).firstOrNull;
-
-    if (firstHardPageBreak != null) {
-      final lineIndex =
-          fittedText.lines.indexWhere((line) => line.contains(hardPageBreak));
-      final List<String> lines = fittedText.lines
-          .sublist(0, lineIndex)
-          // .skipWhile((line) => line.trim().isEmpty)
-          .mapIndexed((index, line) => lineIndex == index
-              ? line.substring(0, line.indexOf(hardPageBreak))
-              : line)
-          .toList();
-
-      return NextLinesData(
-        lines: lines,
-        // nextPosition: textPosition + firstHardPageBreak.end,
-        // was this causing cutoff?
-        nextPosition: textPosition + firstHardPageBreak.end + 1,
-        didExceedMaxLines: fittedText.didExceedMaxLines,
-      );
+    // Handle hard page break, if one exists.
+    final hardPageBreakResult = _handleHardPageBreak(fittedText, textPosition);
+    if (hardPageBreakResult != null) {
+      return hardPageBreakResult;
     }
 
-    final List<String> lines = fittedText.lines;
-
+    // If auto page break is disabled, type is `word`, or all text fits, return as is.
     if (!autoPageBreak ||
         !fittedText.didExceedMaxLines ||
         _data.pageBreakType == PageBreakType.word) {
       return NextLinesData(
-        lines: lines,
-        nextPosition: textPosition + fittedString.length,
+        lines: fittedText.lines,
+        nextPosition: textPosition + fittedText.text.length,
+        didExceedMaxLines: fittedText.didExceedMaxLines,
+      );
+    }
+
+    // Handle auto page breaks based on page break type
+    return _handleAutoPageBreak(fittedText, textPosition);
+  }
+
+  NextLinesData? _handleHardPageBreak(FittedText fittedText, int textPosition) {
+    final firstHardPageBreakMatch =
+        _data.hardPageBreak.allMatches(fittedText.text).firstOrNull;
+
+    if (firstHardPageBreakMatch == null) {
+      return null;
+    }
+
+    final lineIndex = fittedText.lines.indexWhere(
+      (line) => line.contains(_data.hardPageBreak),
+    );
+
+    final List<String> lines =
+        fittedText.lines.sublist(0, lineIndex).mapIndexed((index, line) {
+      if (lineIndex == index) {
+        return line.substring(0, line.indexOf(_data.hardPageBreak));
+      }
+      return line;
+    }).toList();
+
+    return NextLinesData(
+      lines: lines,
+      nextPosition: textPosition + firstHardPageBreakMatch.end + 1,
+      didExceedMaxLines: fittedText.didExceedMaxLines,
+    );
+  }
+
+  NextLinesData _handleAutoPageBreak(FittedText fittedText, int textPosition) {
+    int nextPosition = textPosition + fittedText.text.length;
+
+    if (!fittedText.didExceedMaxLines) {
+      return NextLinesData(
+        lines: fittedText.lines,
+        nextPosition: nextPosition,
         didExceedMaxLines: fittedText.didExceedMaxLines,
       );
     }
 
     final pageBreakIndex = PageBreakType.values.indexOf(_data.pageBreakType);
-    final minBreakLine = lines.length - min(lines.length, _data.breakLines);
+    final int minBreakLine = fittedText.lines.length -
+        min(fittedText.lines.length, _data.breakLines);
 
-    int nextPosition = textPosition + fittedString.length;
-    if (fittedText.didExceedMaxLines) {
-      pageBreakLoop:
-      for (int pb = pageBreakIndex; pb > 0; pb--) {
-        final pageBreak = PageBreakType.values[pb].regex;
-        for (int i = lines.length - 1; i >= minBreakLine; i--) {
-          final match = pageBreak.allMatches(lines[i]).lastOrNull;
-          if (match == null) {
-            continue;
-          }
+    for (int pb = pageBreakIndex; pb > 0; pb--) {
+      final pageBreak = PageBreakType.values[pb].regex;
+      final result = _findPageBreak(
+        fittedText.lines,
+        pageBreak,
+        minBreakLine,
+        textPosition,
+      );
 
-          // extraSpacesToSkipOnNextPage should initially be 0 to avoid cutting off the first letter on next page.
-          int extraSpacesToSkipOnNextPage = 0;
-          if (match.end < lines[i].length) {
-            final line = lines[i].substring(0, match.end);
-            final firstSpacesOnNextPage =
-                _reFirstSpacesInLine.stringMatch(lines[i].substring(match.end));
-            if (firstSpacesOnNextPage != null) {
-              extraSpacesToSkipOnNextPage = firstSpacesOnNextPage.length;
-            }
-            lines[i] = line;
-          }
-          if (i < lines.length - 1) {
-            lines.removeRange(i + 1, lines.length);
-          }
-          nextPosition =
-              textPosition + lines.join().length + extraSpacesToSkipOnNextPage;
-
-          break pageBreakLoop;
-        }
+      if (result != null) {
+        return result;
       }
     }
 
     return NextLinesData(
-      lines: lines,
+      lines: fittedText.lines,
       nextPosition: nextPosition,
       didExceedMaxLines: fittedText.didExceedMaxLines,
     );
+  }
+
+  NextLinesData? _findPageBreak(
+    List<String> lines,
+    RegExp pageBreak,
+    int minBreakLine,
+    int textPosition,
+  ) {
+    for (int i = lines.length - 1; i >= minBreakLine; i--) {
+      final match = pageBreak.allMatches(lines[i]).lastOrNull;
+      if (match == null) {
+        continue;
+      }
+      // Trim the line up to the match
+      lines[i] = lines[i].substring(0, match.end);
+
+      // Remove lines after the break
+      if (i < lines.length - 1) {
+        lines.removeRange(i + 1, lines.length);
+      }
+
+      // Calculate the new next position
+      final nextPosition = textPosition + lines.join().length;
+
+      return NextLinesData(
+        lines: lines,
+        nextPosition: nextPosition,
+        didExceedMaxLines: true,
+      );
+    }
+
+    return null;
   }
 
   void _paginate(PaginateData data, Size layoutSize) {
@@ -238,11 +273,14 @@ class PaginatedController with ChangeNotifier {
     _layoutSize = layoutSize;
     _pages.clear();
 
+    // Early return if layout size is zero or text is empty.
     if (layoutSize == Size.zero || data.text.isEmpty) {
       _pages.add(PageInfo.empty);
       _notifyPaginate();
       return;
     }
+
+    // Calculate line height and max lines per page
     final lineHeight = data.textScaler.scale(data.style.fontSize ?? 14.0) *
         (data.style.height ?? 1.0);
     _lineHeight = lineHeight;
