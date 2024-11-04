@@ -1,3 +1,4 @@
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:paginated_text/paginated_text.dart';
@@ -101,13 +102,11 @@ class _PaginatedExampleState extends State<PaginatedExample>
             return const CircularProgressIndicator.adaptive();
           }
 
-          // return Center(child: Text('hello'));
-
           return PaginatedText(
             data: PaginateData(
               text: pwp,
               dropCapLines: 3,
-              textStyle: TextStyle(fontSize: 24),
+              textStyle: TextStyle(fontSize: 2),
             ),
           );
         });

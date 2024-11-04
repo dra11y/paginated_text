@@ -1,12 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_test/flutter_test.dart';
+
 import 'package:paginated_text/paginated_text.dart';
+import 'package:paginated_text/src/paginate_data.dart';
+
+void main() {
+  test('paginateText', () async {
+    for (var i = 0; i < 10; i++) {
+      final start = DateTime.now();
+      final data = PaginateData(
+        text: pwp,
+        dropCapLines: 3,
+        textStyle: TextStyle(fontSize: 24),
+      );
+      final result = await Paginated.paginate(
+        data,
+        Size(900, 300),
+      );
+      final end = DateTime.now();
+      print('data: ${data.hashCode}');
+      print('result: ${result.hashCode}');
+      print('duration: ${end.difference(start).inMilliseconds} ms');
+    }
+  });
+}
 
 /// From: “The Promise of World Peace”
 /// https://www.bahai.org/documents/the-universal-house-of-justice/promise-world-peace
 const String pwp = '''
-To the Peoples of the World:
-
 The Great Peace towards which people of good will throughout the centuries have inclined their hearts, of which seers and poets for countless generations have expressed their vision, and for which from age to age the sacred scriptures of mankind have constantly held the promise, is now at long last within the reach of the nations. For the first time in history it is possible for everyone to view the entire planet, with all its myriad diversified peoples, in one perspective. World peace is not only possible but inevitable. It is the next stage in the evolution of this planet—in the words of one great thinker, “the planetization of mankind”.
 
 Whether peace is to be reached only after unimaginable horrors precipitated by humanity’s stubborn clinging to old patterns of behaviour, or is to be embraced now by an act of consultative will, is the choice before all who inhabit the earth. At this critical juncture when the intractable problems confronting nations have been fused into one common concern for the whole world, failure to stem the tide of conflict and disorder would be unconscionably irresponsible.
@@ -32,84 +53,3 @@ Whatever suffering and turmoil the years immediately ahead may hold, however dar
 The Universal House of Justice
 October 1985
 ''';
-
-void main() {
-  runApp(const MainApp());
-}
-
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final text = pwp.trim();
-    final style = GoogleFonts.notoSerif(fontSize: 24, height: 1.5);
-    final dropCapStyle = GoogleFonts.bellefair();
-    // final dropCapStyle = GoogleFonts.calligraffitti();
-
-    return MaterialApp(
-      themeMode: ThemeMode.dark,
-      theme: ThemeData.dark(),
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: PaginatedExample(
-          text: text,
-          style: style,
-          dropCapStyle: dropCapStyle,
-        ),
-      ),
-    );
-  }
-}
-
-class PaginatedExample extends StatefulWidget {
-  const PaginatedExample({
-    super.key,
-    required this.text,
-    required this.style,
-    required this.dropCapStyle,
-  });
-
-  final String text;
-  final TextStyle style;
-  final TextStyle dropCapStyle;
-
-  @override
-  State<PaginatedExample> createState() => _PaginatedExampleState();
-}
-
-class _PaginatedExampleState extends State<PaginatedExample>
-    with SingleTickerProviderStateMixin {
-  late Future _googleFontsPending;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _googleFontsPending = GoogleFonts.pendingFonts([
-      widget.style,
-      widget.dropCapStyle,
-    ]);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-        future: _googleFontsPending,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const CircularProgressIndicator.adaptive();
-          }
-
-          // return Center(child: Text('hello'));
-
-          return PaginatedText(
-            data: PaginateData(
-              text: pwp,
-              dropCapLines: 3,
-              textStyle: TextStyle(fontSize: 24),
-            ),
-          );
-        });
-  }
-}

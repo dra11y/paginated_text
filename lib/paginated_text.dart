@@ -1,5 +1,5 @@
-library paginated_text;
+library;
 
-export 'package:paginated_text/src/models/models.dart';
-export 'package:paginated_text/src/widgets/paginated_text.dart';
-export 'package:paginated_text/src/controllers/controllers.dart';
+export 'src/paginated.dart';
+export 'src/paginate_data.dart';
+export 'src/paginated_text.dart';
