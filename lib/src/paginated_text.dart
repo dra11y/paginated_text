@@ -26,14 +26,19 @@ class _PaginatedTextState extends State<PaginatedText>
     super.build(context);
     return LayoutBuilder(builder: (context, constraints) {
       return FutureBuilder(
-        future: Paginated.paginate(widget.data, constraints.biggest),
+        future: Paginated.paginate(
+            widget.data, Size(constraints.maxWidth, constraints.maxHeight)),
         builder: (context, snapshot) {
           final paginated = snapshot.data;
           if (paginated == null) {
+            final error = snapshot.error;
+            if (error != null) {
+              throw error;
+            }
             return Center(child: CircularProgressIndicator.adaptive());
           }
           final page = paginated.page(pageIndex);
-          return page.build();
+          return page.widget(context);
         },
       );
     });

@@ -1,5 +1,9 @@
 import 'package:flutter/painting.dart';
 
+extension StringExt on String {
+  String get withNewline => contains('\n') ? this : '$this\n';
+}
+
 extension ListEqualityExt<T> on List<T> {
   bool equals(List<T> other) =>
       length == other.length && indexed.every((e) => other[e.$1] == e.$2);
@@ -16,8 +20,9 @@ extension LineMetricsTextExt on LineMetrics {
       return '';
     }
 
-    final lineStart = painter.getPositionForOffset(Offset(left, baseline));
-    final boundary = painter.getLineBoundary(lineStart);
+    final linePosition =
+        painter.getPositionForOffset(Offset(left + width / 2, baseline));
+    final boundary = painter.getLineBoundary(linePosition);
 
     /// from getLineBoundary: The newline (if any) is not returned as part of the range.
     /// but calls Paragraph.getLineBoundary: The newline (if any) is returned as part of the range.

@@ -5,8 +5,6 @@ import 'package:paginated_text/paginated_text.dart';
 /// From: “The Promise of World Peace”
 /// https://www.bahai.org/documents/the-universal-house-of-justice/promise-world-peace
 const String pwp = '''
-To the Peoples of the World:
-
 The Great Peace towards which people of good will throughout the centuries have inclined their hearts, of which seers and poets for countless generations have expressed their vision, and for which from age to age the sacred scriptures of mankind have constantly held the promise, is now at long last within the reach of the nations. For the first time in history it is possible for everyone to view the entire planet, with all its myriad diversified peoples, in one perspective. World peace is not only possible but inevitable. It is the next stage in the evolution of this planet—in the words of one great thinker, “the planetization of mankind”.
 
 Whether peace is to be reached only after unimaginable horrors precipitated by humanity’s stubborn clinging to old patterns of behaviour, or is to be embraced now by an act of consultative will, is the choice before all who inhabit the earth. At this critical juncture when the intractable problems confronting nations have been fused into one common concern for the whole world, failure to stem the tide of conflict and disorder would be unconscionably irresponsible.
@@ -43,7 +41,7 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = pwp.trim();
-    final style = GoogleFonts.notoSerif(fontSize: 24, height: 1.5);
+    final style = GoogleFonts.notoSerif(fontSize: 30, height: 1.5);
     final dropCapStyle = GoogleFonts.bellefair();
     // final dropCapStyle = GoogleFonts.calligraffitti();
 
@@ -107,7 +105,13 @@ class _PaginatedExampleState extends State<PaginatedExample>
             data: PaginateData(
               text: pwp,
               dropCapLines: 3,
-              textStyle: TextStyle(fontSize: 24),
+              capStyle: CapStyle(
+                fontFamily: widget.dropCapStyle.fontFamily,
+                fontWeight: widget.dropCapStyle.fontWeight,
+                fontStyle: widget.dropCapStyle.fontStyle,
+                color: widget.dropCapStyle.color,
+              ),
+              textStyle: widget.style,
             ),
           );
         });

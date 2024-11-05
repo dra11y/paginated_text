@@ -1,5 +1,9 @@
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'compute_cap_text_style.dart';
 import 'extensions.dart';
 
 import 'page_break_type.dart';
@@ -8,8 +12,9 @@ sealed class TextPage {
   int get start;
   int get end;
   String get text;
+  Size get layoutSize;
 
-  Widget build();
+  Widget widget(BuildContext context);
 
   const TextPage();
 }
@@ -24,6 +29,8 @@ final class DropCapTextPage extends TextPage {
   final int start;
   @override
   final int end;
+  @override
+  final Size layoutSize;
   final String capChar;
   final List<String> capLines;
   final List<String> restLines;
@@ -42,6 +49,7 @@ final class DropCapTextPage extends TextPage {
     required this.restTextPainter,
     required this.start,
     required this.end,
+    required this.layoutSize,
     required this.capChar,
     required this.capStyle,
     required this.capLines,
@@ -69,6 +77,7 @@ final class DropCapTextPage extends TextPage {
       other.textAlign == textAlign &&
       other.start == start &&
       other.end == end &&
+      other.layoutSize == layoutSize &&
       other.capChar == capChar &&
       other.text == text &&
       other.endBreakType == endBreakType &&
@@ -79,6 +88,7 @@ final class DropCapTextPage extends TextPage {
   int get hashCode => Object.hashAll([
         start,
         end,
+        layoutSize,
         capChar,
         text,
         endBreakType,
@@ -98,6 +108,7 @@ final class DropCapTextPage extends TextPage {
   ${objectRuntimeType(this, 'DropCapTextPage')}(
     start: $start,
     end: $end,
+    layoutSize: $layoutSize,
     text.length: ${text.length},
     capChar: $capChar,
     capLines: ${capLines.debugString()},
@@ -105,64 +116,80 @@ final class DropCapTextPage extends TextPage {
   )''';
 
   @override
-  Widget build() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.start,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            SizedOverflowBox(
-              size: capPainter.size,
-              alignment: Alignment.topLeft,
-              child: Container(
+  Widget widget(BuildContext context) {
+    final baselineOffset = Offset(
+        0, (capLines.length - 1) * textStyle.height! * textStyle.fontSize!);
+    return Semantics(
+      label: text,
+      excludeSemantics: true,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Container(
                 clipBehavior: Clip.none,
                 width: capPainter.width,
-                // height: capHeight + (textBaseline - capBaseline),
-                // transform: Transform.translate(
-                //   offset: Offset(0, textBaseline - capBaseline),
-                // ).transform,
+                transform: Transform.translate(
+                  offset: baselineOffset,
+                ).transform,
                 child: Text.rich(
                   TextSpan(
                     text: capChar,
                     style: capStyle,
                   ),
                   overflow: TextOverflow.visible,
+                  textHeightBehavior: TextHeightBehavior(
+                    applyHeightToFirstAscent: true,
+                  ),
                   textDirection: textDirection,
+                  softWrap: false,
                   textAlign: capAlign,
                   maxLines: 1,
                   textScaler: textScaler,
                 ),
               ),
-            ),
-            SizedBox(
-              width: capLinesPainter.width,
-              child: Text.rich(
-                TextSpan(
-                  text: capLines.join(),
-                  style: textStyle,
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    style: textStyle,
+                    children: [
+                      for (final line in capLines)
+                        TextSpan(text: line.withNewline),
+                    ],
+                  ),
+                  overflow: TextOverflow.clip,
+                  softWrap: false,
+                  maxLines: capLines.length,
+                  textDirection: textDirection,
+                  textAlign: textAlign,
+                  textScaler: textScaler,
                 ),
-                overflow: TextOverflow.clip,
-                maxLines: capLines.length,
-                textDirection: textDirection,
-                textAlign: textAlign,
-                textScaler: textScaler,
               ),
-            ),
-          ],
-        ),
-        Text.rich(
-          TextSpan(
-            text: restLines.join(),
-            style: textStyle,
+            ],
           ),
-          overflow: TextOverflow.clip,
-          textAlign: textAlign,
-          textDirection: textDirection,
-          textScaler: textScaler,
-          style: textStyle,
-        ),
-      ],
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                style: textStyle,
+                children: [
+                  for (final line in restLines)
+                    TextSpan(text: line.withNewline),
+                ],
+              ),
+              overflow: TextOverflow.clip,
+              softWrap: false,
+              textAlign: restTextPainter.textAlign,
+              textDirection: restTextPainter.textDirection,
+              textScaler: restTextPainter.textScaler,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -180,15 +207,20 @@ final class TextOnlyPage extends TextPage {
   @override
   final int end;
   @override
+  final Size layoutSize;
+  @override
   final String text;
+  final TextStyle textStyle;
 
   final List<String> lines;
 
-  static TextOnlyPage blank() => TextOnlyPage(
+  static TextOnlyPage blank({required Size layoutSize}) => TextOnlyPage(
         breakType: PageBreakType.word,
         painter: _emptyTextPainter,
         start: 0,
         end: 0,
+        layoutSize: layoutSize,
+        textStyle: const TextStyle(),
         lines: [''],
         text: '',
       );
@@ -198,8 +230,10 @@ final class TextOnlyPage extends TextPage {
     required this.painter,
     required this.start,
     required this.end,
+    required this.layoutSize,
     required this.lines,
     required this.text,
+    required this.textStyle,
   });
 
   @override
@@ -209,7 +243,9 @@ final class TextOnlyPage extends TextPage {
       other.breakType == breakType &&
       other.start == start &&
       other.end == end &&
+      other.layoutSize == layoutSize &&
       other.text == text &&
+      other.textStyle == textStyle &&
       other.lines.equals(other.lines);
 
   @override
@@ -217,7 +253,9 @@ final class TextOnlyPage extends TextPage {
         breakType,
         start,
         end,
+        layoutSize,
         text,
+        textStyle,
         painter.size,
         ...lines,
       ]);
@@ -228,12 +266,25 @@ final class TextOnlyPage extends TextPage {
     breakType: $breakType,
     start: $start,
     end: $end,
+    layoutSize: $layoutSize,
     text.length: ${text.length},
     lines: ${lines.debugString()},
   )''';
 
   @override
-  Widget build() {
-    throw UnimplementedError();
+  Widget widget(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        style: textStyle,
+        children: [
+          for (final line in lines) TextSpan(text: line.withNewline),
+        ],
+      ),
+      overflow: TextOverflow.clip,
+      softWrap: false,
+      textAlign: painter.textAlign,
+      textDirection: painter.textDirection,
+      textScaler: painter.textScaler,
+    );
   }
 }
