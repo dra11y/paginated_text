@@ -74,32 +74,31 @@ final class Paginated {
     final linePixelHeight = lineHeight * textStyle.fontSize!;
 
     // Process drop cap lines
-    final _DropCapLinesData? dropCapData = await _processDropCapLines(
-      data,
-      textStyle,
-      safeLayoutSize,
-      linePixelHeight,
+    final _DropCapLines? dropCapLines = await _processDropCapLines(
+      data: data,
+      textStyle: textStyle,
+      safeLayoutSize: safeLayoutSize,
+      linePixelHeight: linePixelHeight,
     );
 
-    int offset = dropCapData?.offset ?? 0;
+    int offset = dropCapLines?.offset ?? 0;
     double remainingHeight =
-        dropCapData?.remainingHeight ?? safeLayoutSize.height;
-    String pageText = dropCapData?.pageText ?? '';
-    TextStyle? capTextStyle = dropCapData?.capTextStyle;
+        dropCapLines?.remainingHeight ?? safeLayoutSize.height;
+    String pageText = dropCapLines?.capLinesText ?? '';
+    TextStyle? capTextStyle = dropCapLines?.capTextStyle;
 
-    // Skip any whitespace after the drop cap
-    offset += _skipWhitespace(offset, data.text, skipNewline: false);
+    // Skip any mid-sentence whitespace after the drop cap lines.
+    offset += _skipWhitespace(offset, data.text, newline: false);
 
-    // Paginate the remaining text
+    // Paginate the remaining text.
     final pages = _paginateRemainingText(
-      data,
-      textStyle,
-      safeLayoutSize,
-      linePixelHeight,
-      offset,
-      remainingHeight,
-      pageText,
-      dropCapData,
+      data: data,
+      textStyle: textStyle,
+      safeLayoutSize: safeLayoutSize,
+      linePixelHeight: linePixelHeight,
+      offset: offset,
+      remainingHeight: remainingHeight,
+      dropCapLines: dropCapLines,
     );
 
     return Paginated._(
@@ -111,12 +110,12 @@ final class Paginated {
     );
   }
 
-  static Future<_DropCapLinesData?> _processDropCapLines(
-    final PaginateData data,
-    final TextStyle textStyle,
-    final Size safeLayoutSize,
-    final double linePixelHeight,
-  ) async {
+  static Future<_DropCapLines?> _processDropCapLines({
+    required final PaginateData data,
+    required final TextStyle textStyle,
+    required final Size safeLayoutSize,
+    required final double linePixelHeight,
+  }) async {
     final dropCapLines = data.dropCapLines.clamp(0, _maxDropCapLines);
     if (dropCapLines <= 1 || data.text.isEmpty) {
       return null;
@@ -157,41 +156,43 @@ final class Paginated {
         capLinesMetrics.getLineTexts(capLinesPainter, capLinesText);
 
     int offset = capChar.length + capLines.join().length;
-    offset += _processHardBreak(capLines, data.hardPageBreak);
+    offset += _processHardBreak(
+      lines: capLines,
+      hardPageBreak: data.hardPageBreak,
+    );
 
     final pageText = capChar + capLines.join();
     final remainingHeight = safeLayoutSize.height - capLinesPainter.height;
 
-    return _DropCapLinesData(
+    return _DropCapLines(
       capPainter: capPainter,
       capLinesPainter: capLinesPainter,
       capTextStyle: capTextStyle,
       capChar: capChar,
       capLines: capLines,
-      pageText: pageText,
+      capLinesText: pageText,
       offset: offset,
       remainingHeight: remainingHeight,
     );
   }
 
-  static List<TextPage> _paginateRemainingText(
-    final PaginateData data,
-    final TextStyle textStyle,
-    final Size safeLayoutSize,
-    final double linePixelHeight,
-    final int initialOffset,
-    final double initialRemainingHeight,
-    final String initialPageText,
-    final _DropCapLinesData? dropCapData,
-  ) {
+  static List<TextPage> _paginateRemainingText({
+    required final PaginateData data,
+    required final TextStyle textStyle,
+    required final Size safeLayoutSize,
+    required final double linePixelHeight,
+    required final int offset,
+    required final double remainingHeight,
+    required final _DropCapLines? dropCapLines,
+  }) {
     final List<TextPage> pages = [];
-    int offset = initialOffset;
-    double remainingHeight = initialRemainingHeight;
-    String pageText = initialPageText;
+    int paginatedOffset = offset;
+    double paginatedRemainingHeight = remainingHeight;
+    String pagiantedPageText = dropCapLines?.capLinesText ?? '';
     final maxLinesPerPage = (safeLayoutSize.height / linePixelHeight).ceil();
 
-    while (offset < data.text.length) {
-      final remainingText = data.text.substring(offset);
+    while (paginatedOffset < data.text.length) {
+      final remainingText = data.text.substring(paginatedOffset);
 
       final textPainter = TextPainter(
         text: TextSpan(text: remainingText, style: textStyle),
@@ -203,41 +204,42 @@ final class Paginated {
       final lineMetrics = textPainter.computeLineMetrics();
 
       final fitLineMetrics = lineMetrics.takeWhile((line) {
-        return (line.baseline + line.height) < remainingHeight;
+        return (line.baseline + line.height) < paginatedRemainingHeight;
       }).toList();
 
       final restLines = fitLineMetrics.getLineTexts(textPainter, remainingText);
 
-      offset += _processHardBreak(restLines, data.hardPageBreak);
+      paginatedOffset += _processHardBreak(
+          lines: restLines, hardPageBreak: data.hardPageBreak);
 
       if (fitLineMetrics.length < lineMetrics.length &&
           lineMetrics.sublist(fitLineMetrics.length).any(
               (lm) => lm.lineText(textPainter, remainingText).isNotEmpty)) {
         _processSoftBreak(
-          offset,
-          restLines,
-          data.breakType,
-          data.maxLinesFromEndToBreakPage,
+          offset: paginatedOffset,
+          lines: restLines,
+          breakType: data.breakType,
+          maxLinesFromEndToBreakPage: data.maxLinesFromEndToBreakPage,
         );
       }
 
       final remainingPageText = restLines.join();
-      pageText += remainingPageText;
+      pagiantedPageText += remainingPageText;
 
-      final page = (pages.isEmpty && dropCapData != null)
+      final page = (pages.isEmpty && dropCapLines != null)
           ? DropCapTextPage(
-              capPainter: dropCapData.capPainter,
-              capLinesPainter: dropCapData.capLinesPainter,
+              capPainter: dropCapLines.capPainter,
+              capLinesPainter: dropCapLines.capLinesPainter,
               restTextPainter: textPainter,
-              start: offset,
-              end: offset + remainingPageText.length,
+              start: paginatedOffset,
+              end: paginatedOffset + remainingPageText.length,
               layoutSize: safeLayoutSize,
-              capLines: dropCapData.capLines,
-              capChar: dropCapData.capChar,
+              capLines: dropCapLines.capLines,
+              capChar: dropCapLines.capChar,
               restLines: restLines,
-              text: pageText,
+              text: pagiantedPageText,
               endBreakType: data.breakType,
-              capStyle: dropCapData.capTextStyle,
+              capStyle: dropCapLines.capTextStyle,
               capAlign: TextAlign.center,
               textAlign: TextAlign.start,
               textDirection: data.textDirection,
@@ -247,30 +249,34 @@ final class Paginated {
           : TextOnlyPage(
               breakType: data.breakType,
               painter: textPainter,
-              start: offset,
-              end: offset + remainingPageText.length,
+              start: paginatedOffset,
+              end: paginatedOffset + remainingPageText.length,
               layoutSize: safeLayoutSize,
               lines: restLines,
-              text: pageText,
+              text: pagiantedPageText,
               textStyle: textStyle,
             );
 
       pages.add(page);
 
-      offset += remainingPageText.length;
-      offset += _skipWhitespace(offset, data.text, skipNewline: true);
+      paginatedOffset += remainingPageText.length;
+      paginatedOffset +=
+          _skipWhitespace(paginatedOffset, data.text, newline: true);
 
-      remainingHeight = safeLayoutSize.height;
-      pageText = '';
+      paginatedRemainingHeight = safeLayoutSize.height;
+      pagiantedPageText = '';
     }
 
     return pages;
   }
 
-  static int _skipWhitespace(final int offset, final String text,
-      {required bool skipNewline}) {
+  static int _skipWhitespace(
+    final int offset,
+    final String text, {
+    required final bool newline,
+  }) {
     final substring = text.substring(offset.clamp(0, text.length - 1));
-    final match = skipNewline
+    final match = newline
         ? _whitespaceOrNewline.firstMatch(substring)
         : _whitespace.firstMatch(substring);
     if (match != null) {
@@ -279,12 +285,12 @@ final class Paginated {
     return 0;
   }
 
-  static void _processSoftBreak(
-    final int offset,
-    final List<String> lines,
-    final PageBreakType breakType,
-    final int maxLinesFromEndToBreakPage,
-  ) {
+  static void _processSoftBreak({
+    required final int offset,
+    required final List<String> lines,
+    required final PageBreakType breakType,
+    required final int maxLinesFromEndToBreakPage,
+  }) {
     final smallestBreakIndex = PageBreakType.values.indexOf(breakType);
 
     for (int i = lines.length - 1;
@@ -308,10 +314,10 @@ final class Paginated {
     }
   }
 
-  static int _processHardBreak(
-    final List<String> lines,
-    final Pattern hardPageBreak,
-  ) {
+  static int _processHardBreak({
+    required final List<String> lines,
+    required final Pattern hardPageBreak,
+  }) {
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
       final match = hardPageBreak.allMatches(line).firstOrNull;
@@ -340,23 +346,23 @@ final class Paginated {
 }
 
 // Helper class to encapsulate drop cap lines data
-class _DropCapLinesData {
+class _DropCapLines {
   final TextPainter capPainter;
   final TextPainter capLinesPainter;
   final TextStyle capTextStyle;
   final String capChar;
   final List<String> capLines;
-  final String pageText;
+  final String capLinesText;
   final int offset;
   final double remainingHeight;
 
-  _DropCapLinesData({
+  _DropCapLines({
     required this.capPainter,
     required this.capLinesPainter,
     required this.capTextStyle,
     required this.capChar,
     required this.capLines,
-    required this.pageText,
+    required this.capLinesText,
     required this.offset,
     required this.remainingHeight,
   });
