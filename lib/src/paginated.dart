@@ -58,7 +58,10 @@ final class Paginated {
         ...pages,
       ]);
 
-  static Future<Paginated> paginate(PaginateData data, Size layoutSize) async {
+  static Future<Paginated> paginate(
+    final PaginateData data,
+    final Size layoutSize,
+  ) async {
     final Size safeLayoutSize =
         layoutSize - Offset(_safePaddingHorizontal, 0) as Size;
     final textStyle = data.textStyle.copyWith(
@@ -66,66 +69,128 @@ final class Paginated {
           .clamp(_minFontSize, _maxFontSize),
       height: data.textStyle.height ?? _defaultLineHeight,
     );
-    final dropCapLines = data.dropCapLines.clamp(0, _maxDropCapLines);
 
-    final List<TextPage> pages = [];
-    double remainingHeight = safeLayoutSize.height;
     final lineHeight = textStyle.height!;
     final linePixelHeight = lineHeight * textStyle.fontSize!;
-    int offset = 0;
-    List<String>? capLines;
-    String? capChar;
-    TextPainter? capPainter;
-    TextPainter? capLinesPainter;
-    String pageText = '';
-    TextStyle? capTextStyle;
 
-    final maxLinesPerPage = (safeLayoutSize.height / linePixelHeight).ceil();
+    // Process drop cap lines
+    final _DropCapLinesData? dropCapData = await _processDropCapLines(
+      data,
+      textStyle,
+      safeLayoutSize,
+      linePixelHeight,
+    );
 
-    if (dropCapLines > 1) {
-      capChar = data.text[0];
-      final effectiveCapStyle = data.capStyle ?? CapStyle.fromStyle(textStyle);
-      final capMetrics = await computeCapMetrics(
-        capStyle: effectiveCapStyle,
-        textStyle: textStyle,
-        lineHeight: linePixelHeight,
-        textScaler: data.textScaler,
-        capLines: dropCapLines,
-      );
+    int offset = dropCapData?.offset ?? 0;
+    double remainingHeight =
+        dropCapData?.remainingHeight ?? safeLayoutSize.height;
+    String pageText = dropCapData?.pageText ?? '';
+    TextStyle? capTextStyle = dropCapData?.capTextStyle;
 
-      capTextStyle = capMetrics.capTextStyle.copyWith(
-        height: _capHeight,
-      );
-      capPainter = TextPainter(
-        text: TextSpan(text: capChar, style: capTextStyle),
-        textDirection: data.textDirection,
-        maxLines: 1,
-        textScaler: data.textScaler,
-      )..layout();
-
-      final capLinesText = data.text.substring(1);
-      capLinesPainter = TextPainter(
-        text: TextSpan(text: capLinesText, style: textStyle),
-        textDirection: data.textDirection,
-        maxLines: dropCapLines,
-        textScaler: data.textScaler,
-      )..layout(maxWidth: safeLayoutSize.width - capPainter.width);
-
-      remainingHeight -= capLinesPainter.height;
-
-      final capLinesMetrics = capLinesPainter.computeLineMetrics();
-
-      capLines = capLinesMetrics.getLineTexts(capLinesPainter, capLinesText);
-
-      offset += _processHardBreak(capLines, data.hardPageBreak);
-
-      pageText = capChar + capLines.join();
-      offset += pageText.length;
-    }
-
+    // Skip any whitespace after the drop cap
     offset += _skipWhitespace(offset, data.text, skipNewline: false);
 
-    while (offset < data.text.length - 1) {
+    // Paginate the remaining text
+    final pages = _paginateRemainingText(
+      data,
+      textStyle,
+      safeLayoutSize,
+      linePixelHeight,
+      offset,
+      remainingHeight,
+      pageText,
+      dropCapData,
+    );
+
+    return Paginated._(
+      text: data.text,
+      textStyle: textStyle,
+      capTextStyle: capTextStyle,
+      layoutSize: safeLayoutSize,
+      pages: pages,
+    );
+  }
+
+  static Future<_DropCapLinesData?> _processDropCapLines(
+    final PaginateData data,
+    final TextStyle textStyle,
+    final Size safeLayoutSize,
+    final double linePixelHeight,
+  ) async {
+    final dropCapLines = data.dropCapLines.clamp(0, _maxDropCapLines);
+    if (dropCapLines <= 1 || data.text.isEmpty) {
+      return null;
+    }
+
+    final capChar = data.text[0];
+    final effectiveCapStyle = data.capStyle ?? CapStyle.fromStyle(textStyle);
+
+    final capMetrics = await computeCapMetrics(
+      capStyle: effectiveCapStyle,
+      textStyle: textStyle,
+      lineHeight: linePixelHeight,
+      textScaler: data.textScaler,
+      capLines: dropCapLines,
+    );
+
+    final capTextStyle = capMetrics.capTextStyle.copyWith(
+      height: _capHeight,
+    );
+
+    final capPainter = TextPainter(
+      text: TextSpan(text: capChar, style: capTextStyle),
+      textDirection: data.textDirection,
+      maxLines: 1,
+      textScaler: data.textScaler,
+    )..layout();
+
+    final capLinesText = data.text.substring(1);
+    final capLinesPainter = TextPainter(
+      text: TextSpan(text: capLinesText, style: textStyle),
+      textDirection: data.textDirection,
+      maxLines: dropCapLines,
+      textScaler: data.textScaler,
+    )..layout(maxWidth: safeLayoutSize.width - capPainter.width);
+
+    final capLinesMetrics = capLinesPainter.computeLineMetrics();
+    final capLines =
+        capLinesMetrics.getLineTexts(capLinesPainter, capLinesText);
+
+    int offset = capChar.length + capLines.join().length;
+    offset += _processHardBreak(capLines, data.hardPageBreak);
+
+    final pageText = capChar + capLines.join();
+    final remainingHeight = safeLayoutSize.height - capLinesPainter.height;
+
+    return _DropCapLinesData(
+      capPainter: capPainter,
+      capLinesPainter: capLinesPainter,
+      capTextStyle: capTextStyle,
+      capChar: capChar,
+      capLines: capLines,
+      pageText: pageText,
+      offset: offset,
+      remainingHeight: remainingHeight,
+    );
+  }
+
+  static List<TextPage> _paginateRemainingText(
+    final PaginateData data,
+    final TextStyle textStyle,
+    final Size safeLayoutSize,
+    final double linePixelHeight,
+    final int initialOffset,
+    final double initialRemainingHeight,
+    final String initialPageText,
+    final _DropCapLinesData? dropCapData,
+  ) {
+    final List<TextPage> pages = [];
+    int offset = initialOffset;
+    double remainingHeight = initialRemainingHeight;
+    String pageText = initialPageText;
+    final maxLinesPerPage = (safeLayoutSize.height / linePixelHeight).ceil();
+
+    while (offset < data.text.length) {
       final remainingText = data.text.substring(offset);
 
       final textPainter = TextPainter(
@@ -159,27 +224,20 @@ final class Paginated {
       final remainingPageText = restLines.join();
       pageText += remainingPageText;
 
-      final isDropCapPage = pages.isEmpty &&
-          capPainter != null &&
-          capLines != null &&
-          capLinesPainter != null &&
-          capChar != null &&
-          capTextStyle != null;
-
-      final page = isDropCapPage
+      final page = (pages.isEmpty && dropCapData != null)
           ? DropCapTextPage(
-              capPainter: capPainter,
-              capLinesPainter: capLinesPainter,
+              capPainter: dropCapData.capPainter,
+              capLinesPainter: dropCapData.capLinesPainter,
               restTextPainter: textPainter,
               start: offset,
               end: offset + remainingPageText.length,
               layoutSize: safeLayoutSize,
-              capLines: capLines,
-              capChar: capChar,
+              capLines: dropCapData.capLines,
+              capChar: dropCapData.capChar,
               restLines: restLines,
               text: pageText,
               endBreakType: data.breakType,
-              capStyle: capTextStyle,
+              capStyle: dropCapData.capTextStyle,
               capAlign: TextAlign.center,
               textAlign: TextAlign.start,
               textDirection: data.textDirection,
@@ -206,13 +264,7 @@ final class Paginated {
       pageText = '';
     }
 
-    return Paginated._(
-      text: data.text,
-      textStyle: textStyle,
-      capTextStyle: capTextStyle,
-      layoutSize: safeLayoutSize,
-      pages: pages,
-    );
+    return pages;
   }
 
   static int _skipWhitespace(final int offset, final String text,
@@ -285,4 +337,27 @@ final class Paginated {
     layoutSize: $layoutSize,
     pages: $pages,
   )''';
+}
+
+// Helper class to encapsulate drop cap lines data
+class _DropCapLinesData {
+  final TextPainter capPainter;
+  final TextPainter capLinesPainter;
+  final TextStyle capTextStyle;
+  final String capChar;
+  final List<String> capLines;
+  final String pageText;
+  final int offset;
+  final double remainingHeight;
+
+  _DropCapLinesData({
+    required this.capPainter,
+    required this.capLinesPainter,
+    required this.capTextStyle,
+    required this.capChar,
+    required this.capLines,
+    required this.pageText,
+    required this.offset,
+    required this.remainingHeight,
+  });
 }
