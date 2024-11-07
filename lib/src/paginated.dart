@@ -187,7 +187,7 @@ final class Paginated {
     final List<TextPage> pages = [];
     int paginatedOffset = offset;
     double paginatedRemainingHeight = remainingHeight;
-    String pagiantedPageText = dropCapLines?.capLinesText ?? '';
+    String paginatedText = dropCapLines?.capLinesText ?? '';
     final maxLinesPerPage = (safeLayoutSize.height / linePixelHeight).ceil();
 
     while (paginatedOffset < data.text.length) {
@@ -223,7 +223,7 @@ final class Paginated {
       }
 
       final remainingPageText = restLines.join();
-      pagiantedPageText += remainingPageText;
+      paginatedText += remainingPageText;
 
       final page = (pages.isEmpty && dropCapLines != null)
           ? DropCapTextPage(
@@ -236,7 +236,7 @@ final class Paginated {
               capLines: dropCapLines.capLines,
               capChar: dropCapLines.capChar,
               restLines: restLines,
-              text: pagiantedPageText,
+              text: paginatedText,
               endBreakType: data.breakType,
               capStyle: dropCapLines.capTextStyle,
               capAlign: TextAlign.center,
@@ -252,7 +252,7 @@ final class Paginated {
               end: paginatedOffset + remainingPageText.length,
               layoutSize: safeLayoutSize,
               lines: restLines,
-              text: pagiantedPageText,
+              text: paginatedText,
               textStyle: textStyle,
             );
 
@@ -263,7 +263,7 @@ final class Paginated {
           _skipWhitespace(paginatedOffset, data.text, newline: true);
 
       paginatedRemainingHeight = safeLayoutSize.height;
-      pagiantedPageText = '';
+      paginatedText = '';
     }
 
     return pages;
