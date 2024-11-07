@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
 import 'package:paginated_text/paginated_text.dart';
-import 'package:paginated_text/src/paginate_data.dart';
 
 void main() {
   test('paginateText', () async {

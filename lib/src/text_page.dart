@@ -1,9 +1,6 @@
-import 'dart:math';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'compute_cap_text_style.dart';
 import 'extensions.dart';
 
 import 'page_break_type.dart';

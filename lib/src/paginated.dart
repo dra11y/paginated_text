@@ -84,7 +84,6 @@ final class Paginated {
     int offset = dropCapLines?.offset ?? 0;
     double remainingHeight =
         dropCapLines?.remainingHeight ?? safeLayoutSize.height;
-    String pageText = dropCapLines?.capLinesText ?? '';
     TextStyle? capTextStyle = dropCapLines?.capTextStyle;
 
     // Skip any mid-sentence whitespace after the drop cap lines.
