@@ -16,27 +16,33 @@ extension ListLineMetricsTextExt on List<LineMetrics> {
 
 extension LineMetricsTextExt on LineMetrics {
   String lineText(TextPainter painter, String text) {
+    // Lots of inconsistencies in `TextPainter` and `LineMetrics`.
+    // One bug in `TextPainter` causes the last line to be duplicated, but it has width 0.
+    // Most lines whose `width` == 0 are newlines, but we check `hardBreak` to be sure.
+    // Without this early return, the last line of text is duplicated.
+    // Besides, we need not compute the boundary if `width` == 0.
     if (width == 0) {
-      return '';
+      return hardBreak ? '\n' : '';
     }
 
     final linePosition =
         painter.getPositionForOffset(Offset(left + width / 2, baseline));
     final boundary = painter.getLineBoundary(linePosition);
 
-    /// from getLineBoundary: The newline (if any) is not returned as part of the range.
-    /// but calls Paragraph.getLineBoundary: The newline (if any) is returned as part of the range.
-    /// Which is it?
-    /// Through experimentation, the first is true.
+    // from getLineBoundary: The newline (if any) is not returned as part of the range.
+    // but calls Paragraph.getLineBoundary: The newline (if any) is returned as part of the range.
+    // Which is it?
+    // Through experimentation, the first is true.
+    final start = boundary.start;
     final end = (hardBreak && boundary.end < text.length)
         ? boundary.end + 1
         : boundary.end;
-    final lineText = text.substring(boundary.start, end);
+    final lineText = text.substring(start, end);
     return lineText;
   }
 }
 
-extension DebugListStringExt on List<String> {
+extension DebugListStringExt on List {
   String debugString() {
     final buffer = StringBuffer('\n');
     for (var i = 0; i < length; i++) {

@@ -99,8 +99,6 @@ class _PaginatedExampleState extends State<PaginatedExample>
             return const CircularProgressIndicator.adaptive();
           }
 
-          // return Center(child: Text('hello'));
-
           return PaginatedText(
             data: PaginateData(
               text: pwp,

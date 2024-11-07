@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -11,15 +10,23 @@ import 'compute_cap_text_style.dart';
 import 'page_break_type.dart';
 import 'text_page.dart';
 
-final _whitespace = RegExp(r'^([^\S\r\n](?!\s))');
-final _whitespaceOrNewline = RegExp(r'^(\s*\n|\s(?!\s))');
-
 final class Paginated {
   final String text;
   final TextStyle textStyle;
   final TextStyle? capTextStyle;
   final Size layoutSize;
   final List<TextPage> pages;
+
+  static final _whitespace = RegExp(r'^[^\S\r\n]');
+  static final _whitespaceOrNewline = RegExp(r'^[^\S]');
+  static const double _minFontSize = 10.0;
+  static const double _maxFontSize = 200.0;
+  static const double _defaultFontSize = 16.0;
+  static const double _defaultLineHeight = 1.4;
+  static const double _safePaddingHorizontal = 20.0;
+  // The line height used to layout the drop cap so it gets properly aligned by `Row`.
+  static const double _capHeight = 0.001;
+  static const int _maxDropCapLines = 5;
 
   const Paginated._({
     required this.text,
@@ -52,24 +59,28 @@ final class Paginated {
       ]);
 
   static Future<Paginated> paginate(PaginateData data, Size layoutSize) async {
-    final Size safeLayoutSize = layoutSize - Offset(20, 0) as Size;
+    final Size safeLayoutSize =
+        layoutSize - Offset(_safePaddingHorizontal, 0) as Size;
     final textStyle = data.textStyle.copyWith(
-      fontSize: (data.textStyle.fontSize ?? 16).clamp(10, 200),
-      height: data.textStyle.height ?? 1.4,
+      fontSize: (data.textStyle.fontSize ?? _defaultFontSize)
+          .clamp(_minFontSize, _maxFontSize),
+      height: data.textStyle.height ?? _defaultLineHeight,
     );
-    final dropCapLines = data.dropCapLines.clamp(0, 5);
+    final dropCapLines = data.dropCapLines.clamp(0, _maxDropCapLines);
 
     final List<TextPage> pages = [];
     double remainingHeight = safeLayoutSize.height;
     final lineHeight = textStyle.height!;
     final linePixelHeight = lineHeight * textStyle.fontSize!;
     int offset = 0;
-    final List<String> capLines = [];
+    List<String>? capLines;
     String? capChar;
     TextPainter? capPainter;
     TextPainter? capLinesPainter;
     String pageText = '';
     TextStyle? capTextStyle;
+
+    final maxLinesPerPage = (safeLayoutSize.height / linePixelHeight).ceil();
 
     if (dropCapLines > 1) {
       capChar = data.text[0];
@@ -83,7 +94,7 @@ final class Paginated {
       );
 
       capTextStyle = capMetrics.capTextStyle.copyWith(
-        height: 0.001,
+        height: _capHeight,
       );
       capPainter = TextPainter(
         text: TextSpan(text: capChar, style: capTextStyle),
@@ -98,29 +109,21 @@ final class Paginated {
         textDirection: data.textDirection,
         maxLines: dropCapLines,
         textScaler: data.textScaler,
-        // textHeightBehavior: TextHeightBehavior(
-        //   applyHeightToFirstAscent: true,
-        //   applyHeightToLastDescent: true,
-        //   leadingDistribution: TextLeadingDistribution.even,
-        // ),
       )..layout(maxWidth: safeLayoutSize.width - capPainter.width);
 
       remainingHeight -= capLinesPainter.height;
 
       final capLinesMetrics = capLinesPainter.computeLineMetrics();
 
-      capLines
-          .addAll(capLinesMetrics.getLineTexts(capLinesPainter, capLinesText));
+      capLines = capLinesMetrics.getLineTexts(capLinesPainter, capLinesText);
 
-      offset = _processHardBreak(capLines, data.hardPageBreak, offset);
+      offset += _processHardBreak(capLines, data.hardPageBreak);
 
       pageText = capChar + capLines.join();
       offset += pageText.length;
     }
 
-    final maxLinesPerPage = (safeLayoutSize.height / linePixelHeight).ceil();
-
-    offset = _skipWhitespace(offset, data.text, skipNewline: false);
+    offset += _skipWhitespace(offset, data.text, skipNewline: false);
 
     while (offset < data.text.length - 1) {
       final remainingText = data.text.substring(offset);
@@ -130,28 +133,35 @@ final class Paginated {
         textDirection: data.textDirection,
         maxLines: maxLinesPerPage,
         textScaler: data.textScaler,
-        // textHeightBehavior: TextHeightBehavior(
-        //   applyHeightToFirstAscent: true,
-        //   applyHeightToLastDescent: true,
-        //   leadingDistribution: TextLeadingDistribution.even,
-        // ),
       )..layout(maxWidth: safeLayoutSize.width);
 
-      final lineMetrics = textPainter.computeLineMetrics().takeWhile((line) {
+      final lineMetrics = textPainter.computeLineMetrics();
+
+      final fitLineMetrics = lineMetrics.takeWhile((line) {
         return (line.baseline + line.height) < remainingHeight;
       }).toList();
 
-      final restLines = lineMetrics.getLineTexts(textPainter, remainingText);
+      final restLines = fitLineMetrics.getLineTexts(textPainter, remainingText);
 
-      offset = _processHardBreak(restLines, data.hardPageBreak, offset);
-      _processSoftBreak(
-          restLines, data.breakType, data.maxLinesFromEndToBreakPage);
+      offset += _processHardBreak(restLines, data.hardPageBreak);
+
+      if (fitLineMetrics.length < lineMetrics.length &&
+          lineMetrics.sublist(fitLineMetrics.length).any(
+              (lm) => lm.lineText(textPainter, remainingText).isNotEmpty)) {
+        _processSoftBreak(
+          offset,
+          restLines,
+          data.breakType,
+          data.maxLinesFromEndToBreakPage,
+        );
+      }
 
       final remainingPageText = restLines.join();
       pageText += remainingPageText;
 
       final isDropCapPage = pages.isEmpty &&
           capPainter != null &&
+          capLines != null &&
           capLinesPainter != null &&
           capChar != null &&
           capTextStyle != null;
@@ -190,7 +200,10 @@ final class Paginated {
       pages.add(page);
 
       offset += remainingPageText.length;
-      offset = _skipWhitespace(offset, data.text);
+      offset += _skipWhitespace(offset, data.text, skipNewline: true);
+
+      remainingHeight = safeLayoutSize.height;
+      pageText = '';
     }
 
     return Paginated._(
@@ -203,55 +216,49 @@ final class Paginated {
   }
 
   static int _skipWhitespace(final int offset, final String text,
-      {bool skipNewline = true}) {
-    int newOffset = offset;
-    while (newOffset < text.length - 1) {
-      final next = text.substring(newOffset);
-      final match = skipNewline
-          ? _whitespaceOrNewline.firstMatch(next)
-          : _whitespace.firstMatch(next);
-      if (match == null) {
-        break;
-      }
-      newOffset += match.end;
+      {required bool skipNewline}) {
+    final substring = text.substring(offset.clamp(0, text.length - 1));
+    final match = skipNewline
+        ? _whitespaceOrNewline.firstMatch(substring)
+        : _whitespace.firstMatch(substring);
+    if (match != null) {
+      return match.end - match.start;
     }
-    return newOffset;
+    return 0;
   }
 
   static void _processSoftBreak(
+    final int offset,
     final List<String> lines,
     final PageBreakType breakType,
-    int maxLinesFromEndToBreakPage,
+    final int maxLinesFromEndToBreakPage,
   ) {
-    // Flutter handles page break on word automatically.
-    if (breakType == PageBreakType.word) {
-      return;
-    }
+    final smallestBreakIndex = PageBreakType.values.indexOf(breakType);
 
     for (int i = lines.length - 1;
         i >= max(1, lines.length - maxLinesFromEndToBreakPage);
         i--) {
-      final line = lines[i];
-      final match = breakType.regex.allMatches(line).lastOrNull;
-      if (match == null) {
-        continue;
-      }
+      for (int j = PageBreakType.values.length - 1;
+          j >= smallestBreakIndex;
+          j--) {
+        final currentBreakType = PageBreakType.values[j];
 
-      final cutLine = line.substring(0, match.end);
-      lines[i] = cutLine;
-      if (i < lines.length - 1) {
-        lines.removeRange(i + 1, lines.length);
+        final line = lines[i];
+        final match = currentBreakType.regex.allMatches(line).lastOrNull;
+        if (match != null) {
+          lines[i] = line.substring(0, match.end);
+          if (i < lines.length - 1) {
+            lines.removeRange(i + 1, lines.length);
+          }
+          return;
+        }
       }
-      break;
     }
-
-    return;
   }
 
   static int _processHardBreak(
     final List<String> lines,
     final Pattern hardPageBreak,
-    int offset,
   ) {
     for (int i = 0; i < lines.length; i++) {
       final line = lines[i];
@@ -259,15 +266,14 @@ final class Paginated {
       if (match == null) {
         continue;
       }
-      final cutLine = line.substring(0, match.start);
-      lines[i] = cutLine;
-      offset += (match.end - match.start);
+      lines[i] = line.substring(0, match.start);
       if (i < lines.length - 1) {
         lines.removeRange(i + 1, lines.length);
       }
-      break;
+      return match.end - match.start;
     }
-    return offset;
+
+    return 0;
   }
 
   @override
