@@ -1,6 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 
+import 'page_intent.dart';
 import 'paginate_data.dart';
 import 'paginated.dart';
 
@@ -9,24 +13,42 @@ class PaginatedText extends StatefulWidget {
     super.key,
     required this.data,
     this.wantKeepAlive = true,
+    this.shortcuts,
+    this.autofocus = true,
+    this.focusNode,
+    this.onFocusChange,
+    this.onSelectionChanged,
   });
 
   final PaginateData data;
   final bool wantKeepAlive;
+  final Map<ShortcutActivator, Intent>? shortcuts;
+  final bool autofocus;
+  final FocusNode? focusNode;
+  final ValueChanged<bool>? onFocusChange;
+  final ValueChanged<SelectedContent?>? onSelectionChanged;
+
+  static const Map<ShortcutActivator, Intent> defaultShortcuts = {
+    SingleActivator(LogicalKeyboardKey.home, meta: true):
+        PageIntent(PageDirection.first),
+    SingleActivator(LogicalKeyboardKey.home, control: true):
+        PageIntent(PageDirection.first),
+    SingleActivator(LogicalKeyboardKey.pageUp):
+        PageIntent(PageDirection.reverse),
+    SingleActivator(LogicalKeyboardKey.pageDown):
+        PageIntent(PageDirection.forward),
+    SingleActivator(LogicalKeyboardKey.arrowLeft):
+        PageIntent(PageDirection.reverse),
+    SingleActivator(LogicalKeyboardKey.arrowRight):
+        PageIntent(PageDirection.forward),
+    SingleActivator(LogicalKeyboardKey.end, meta: true):
+        PageIntent(PageDirection.last),
+    SingleActivator(LogicalKeyboardKey.end, control: true):
+        PageIntent(PageDirection.last),
+  };
 
   @override
   State<PaginatedText> createState() => _PaginatedTextState();
-}
-
-enum PageDirection {
-  forward,
-  reverse,
-}
-
-class PageIntent extends Intent {
-  const PageIntent(this.direction);
-
-  final PageDirection direction;
 }
 
 class _PaginatedTextState extends State<PaginatedText>
@@ -42,13 +64,10 @@ class _PaginatedTextState extends State<PaginatedText>
         builder: (context, snapshot) {
           final paginated = snapshot.data;
           return FocusableActionDetector(
-            autofocus: true,
-            shortcuts: {
-              SingleActivator(LogicalKeyboardKey.arrowLeft):
-                  PageIntent(PageDirection.reverse),
-              SingleActivator(LogicalKeyboardKey.arrowRight):
-                  PageIntent(PageDirection.forward),
-            },
+            autofocus: widget.autofocus,
+            focusNode: widget.focusNode,
+            onFocusChange: widget.onFocusChange,
+            shortcuts: widget.shortcuts ?? PaginatedText.defaultShortcuts,
             actions: {
               PageIntent: CallbackAction<PageIntent>(
                 onInvoke: (intent) {
@@ -56,10 +75,15 @@ class _PaginatedTextState extends State<PaginatedText>
                     return null;
                   }
                   int index = pageIndex;
-                  if (intent.direction == PageDirection.forward) {
-                    index++;
-                  } else {
-                    index--;
+                  switch (intent.direction) {
+                    case PageDirection.first:
+                      index = 0;
+                    case PageDirection.forward:
+                      index++;
+                    case PageDirection.reverse:
+                      index--;
+                    case PageDirection.last:
+                      index = paginated.pages.length - 1;
                   }
                   index = index.clamp(0, paginated.pages.length - 1);
                   if (index == pageIndex) {
@@ -77,15 +101,18 @@ class _PaginatedTextState extends State<PaginatedText>
               child: Align(
                 key: ValueKey(pageIndex),
                 alignment: Alignment.topLeft,
-                child: switch (snapshot.connectionState) {
-                  ConnectionState.done => snapshot.hasError
-                      ? Center(
-                          child: Text(
-                              'Error: ${snapshot.error}, stack: ${snapshot.stackTrace}'),
-                        )
-                      : snapshot.data!.page(pageIndex).widget(context),
-                  _ => Center(child: CircularProgressIndicator.adaptive()),
-                },
+                child: SelectionArea(
+                  onSelectionChanged: widget.onSelectionChanged,
+                  child: switch (snapshot.connectionState) {
+                    ConnectionState.done => snapshot.hasError
+                        ? Center(
+                            child: Text(
+                                'Error: ${snapshot.error}, stack: ${snapshot.stackTrace}'),
+                          )
+                        : snapshot.data!.page(pageIndex).widget(context),
+                    _ => Center(child: CircularProgressIndicator.adaptive()),
+                  },
+                ),
               ),
               transitionBuilder: (child, animation) {
                 return FadeTransition(
