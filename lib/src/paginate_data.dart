@@ -9,9 +9,10 @@ final class PaginateData {
   final int dropCapLines;
   final TextStyle textStyle;
   final CapStyle? capStyle;
+  final bool parseMarkdown;
   final TextScaler textScaler;
   final TextDirection textDirection;
-  final PageBreakType breakType;
+  final PageBreakType pageBreakType;
   final Pattern hardPageBreak;
   final int maxLinesFromEndToBreakPage;
 
@@ -20,9 +21,10 @@ final class PaginateData {
     required this.dropCapLines,
     required this.textStyle,
     this.capStyle,
+    this.parseMarkdown = false,
     this.textScaler = TextScaler.noScaling,
     this.textDirection = TextDirection.ltr,
-    this.breakType = PageBreakType.fragment,
+    this.pageBreakType = PageBreakType.fragment,
     this.hardPageBreak = '<page>',
     this.maxLinesFromEndToBreakPage = 5,
   });
@@ -33,7 +35,8 @@ final class PaginateData {
         dropCapLines,
         textStyle,
         capStyle,
-        breakType,
+        parseMarkdown,
+        pageBreakType,
         hardPageBreak,
         textScaler,
         textDirection,
@@ -47,7 +50,8 @@ final class PaginateData {
       other.dropCapLines == dropCapLines &&
       other.textStyle == textStyle &&
       other.capStyle == capStyle &&
-      other.breakType == breakType &&
+      other.parseMarkdown == parseMarkdown &&
+      other.pageBreakType == pageBreakType &&
       other.hardPageBreak == hardPageBreak &&
       other.textScaler == textScaler &&
       other.textDirection == textDirection &&
@@ -58,9 +62,10 @@ final class PaginateData {
     int? dropCapLines,
     TextStyle? textStyle,
     CapStyle? capStyle,
+    bool? parseMarkdown,
     TextScaler? textScaler,
     TextDirection? textDirection,
-    PageBreakType? breakType,
+    PageBreakType? pageBreakType,
     String? hardPageBreak,
     int? maxLinesFromEndToBreakPage,
   }) =>
@@ -69,9 +74,10 @@ final class PaginateData {
         dropCapLines: dropCapLines ?? this.dropCapLines,
         textStyle: textStyle ?? this.textStyle,
         capStyle: capStyle ?? this.capStyle,
+        parseMarkdown: parseMarkdown ?? this.parseMarkdown,
         textScaler: textScaler ?? this.textScaler,
         textDirection: textDirection ?? this.textDirection,
-        breakType: breakType ?? this.breakType,
+        pageBreakType: pageBreakType ?? this.pageBreakType,
         hardPageBreak: hardPageBreak ?? this.hardPageBreak,
         maxLinesFromEndToBreakPage:
             maxLinesFromEndToBreakPage ?? this.maxLinesFromEndToBreakPage,
@@ -84,9 +90,10 @@ final class PaginateData {
     dropCapLines: $dropCapLines,
     textStyle: $textStyle,
     capStyle: $capStyle,
+    parseMarkdown: $parseMarkdown,
     textScaler: $textScaler,
     textDirection: $textDirection,
-    breakType: $breakType,
+    pageBreakType: $pageBreakType,
     hardPageBreak: $hardPageBreak,
     maxLinesFromEndToBreakPage: $maxLinesFromEndToBreakPage,
   )''';

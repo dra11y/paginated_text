@@ -20,7 +20,7 @@ final class DropCapTextPage extends TextPage {
   final TextPainter capPainter;
   final TextPainter capLinesPainter;
   final TextPainter restTextPainter;
-  final PageBreakType endBreakType;
+  final PageBreakType pageBreakType;
 
   @override
   final int start;
@@ -57,7 +57,7 @@ final class DropCapTextPage extends TextPage {
     required this.textAlign,
     required this.restLines,
     required this.text,
-    required this.endBreakType,
+    required this.pageBreakType,
   });
 
   @override
@@ -77,7 +77,7 @@ final class DropCapTextPage extends TextPage {
       other.layoutSize == layoutSize &&
       other.capChar == capChar &&
       other.text == text &&
-      other.endBreakType == endBreakType &&
+      other.pageBreakType == pageBreakType &&
       other.capLines.equals(capLines) &&
       other.restLines.equals(restLines);
 
@@ -88,7 +88,7 @@ final class DropCapTextPage extends TextPage {
         layoutSize,
         capChar,
         text,
-        endBreakType,
+        pageBreakType,
         capStyle,
         textStyle,
         textDirection,
@@ -196,7 +196,7 @@ final _emptyTextPainter =
       ..layout();
 
 final class TextOnlyPage extends TextPage {
-  final PageBreakType breakType;
+  final PageBreakType pageBreakType;
   final TextPainter painter;
 
   @override
@@ -212,7 +212,7 @@ final class TextOnlyPage extends TextPage {
   final List<String> lines;
 
   static TextOnlyPage blank({required Size layoutSize}) => TextOnlyPage(
-        breakType: PageBreakType.word,
+        pageBreakType: PageBreakType.word,
         painter: _emptyTextPainter,
         start: 0,
         end: 0,
@@ -223,7 +223,7 @@ final class TextOnlyPage extends TextPage {
       );
 
   const TextOnlyPage({
-    required this.breakType,
+    required this.pageBreakType,
     required this.painter,
     required this.start,
     required this.end,
@@ -237,7 +237,7 @@ final class TextOnlyPage extends TextPage {
   bool operator ==(Object other) =>
       other is TextOnlyPage &&
       other.painter.size == painter.size &&
-      other.breakType == breakType &&
+      other.pageBreakType == pageBreakType &&
       other.start == start &&
       other.end == end &&
       other.layoutSize == layoutSize &&
@@ -247,7 +247,7 @@ final class TextOnlyPage extends TextPage {
 
   @override
   int get hashCode => Object.hashAll([
-        breakType,
+        pageBreakType,
         start,
         end,
         layoutSize,
@@ -260,7 +260,7 @@ final class TextOnlyPage extends TextPage {
   @override
   String toString() => '''
   ${objectRuntimeType(this, 'TextOnlyPage')}(
-    breakType: $breakType,
+    breakType: $pageBreakType,
     start: $start,
     end: $end,
     layoutSize: $layoutSize,

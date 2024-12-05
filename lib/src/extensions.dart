@@ -10,11 +10,14 @@ extension ListEqualityExt<T> on List<T> {
 }
 
 extension ListLineMetricsTextExt on List<LineMetrics> {
+  /// Get the texts of all of the lines for the [LineMetrics]
+  /// in the list using the given [TextPainter].
   List<String> getLineTexts(TextPainter painter, String text) =>
       map((line) => line.lineText(painter, text)).toList();
 }
 
 extension LineMetricsTextExt on LineMetrics {
+  /// Get the text of the line for this [LineMetrics] using the given [TextPainter].
   String lineText(TextPainter painter, String text) {
     // Lots of inconsistencies in `TextPainter` and `LineMetrics`.
     // One bug in `TextPainter` causes the last line to be duplicated, but it has width 0.

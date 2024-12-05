@@ -16,7 +16,7 @@ enum PageBreakType {
 
   static final Map<PageBreakType, RegExp> _regexMap = {
     PageBreakType.fragment: RegExp(r'([.,;:]\s+|(—|–|--)\s*)'),
-    PageBreakType.sentence: RegExp(r'\.\S*[^\S]*'),
+    PageBreakType.sentence: RegExp(r'[.?!]\S*[^\S]*'),
     PageBreakType.paragraph: RegExp(r'[\r\n\s*]{2,}'),
     PageBreakType.word: RegExp(r'\s+'),
   };

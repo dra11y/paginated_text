@@ -40,24 +40,6 @@ final class Paginated {
       ? pages[index.clamp(0, pages.length - 1)]
       : TextOnlyPage.blank(layoutSize: layoutSize);
 
-  @override
-  bool operator ==(Object other) =>
-      other is Paginated &&
-      other.text == text &&
-      other.textStyle == textStyle &&
-      other.capTextStyle == capTextStyle &&
-      other.layoutSize == layoutSize &&
-      other.pages.equals(pages);
-
-  @override
-  int get hashCode => Object.hashAll([
-        text,
-        textStyle,
-        capTextStyle,
-        layoutSize,
-        ...pages,
-      ]);
-
   static Future<Paginated> paginate(
     final PaginateData data,
     final Size layoutSize,
@@ -206,9 +188,16 @@ final class Paginated {
 
       final lineMetrics = textPainter.computeLineMetrics();
 
-      final fitLineMetrics = lineMetrics.takeWhile((line) {
-        return (line.baseline + line.height) < paginatedRemainingHeight;
-      }).toList();
+      final fitLineMetrics = lineMetrics.indexed
+          .takeWhile((lm) {
+            final line = lm.$2;
+            final fits =
+                (line.baseline + line.height) < paginatedRemainingHeight;
+            // print('fits: ${lm.$1 + 1}. $fits');
+            return fits;
+          })
+          .map((lm) => lm.$2)
+          .toList();
 
       final restLines = fitLineMetrics.getLineTexts(textPainter, remainingText);
 
@@ -221,7 +210,7 @@ final class Paginated {
         _processSoftBreak(
           offset: paginatedOffset,
           lines: restLines,
-          breakType: layoutData.data.breakType,
+          pageBreakType: layoutData.data.pageBreakType,
           maxLinesFromEndToBreakPage:
               layoutData.data.maxLinesFromEndToBreakPage,
         );
@@ -242,7 +231,7 @@ final class Paginated {
               capChar: dropCapLines.capChar,
               restLines: restLines,
               text: paginatedText,
-              endBreakType: layoutData.data.breakType,
+              pageBreakType: layoutData.data.pageBreakType,
               capStyle: dropCapLines.capTextStyle,
               capAlign: TextAlign.center,
               textAlign: TextAlign.start,
@@ -251,7 +240,7 @@ final class Paginated {
               textScaler: layoutData.data.textScaler,
             )
           : TextOnlyPage(
-              breakType: layoutData.data.breakType,
+              pageBreakType: layoutData.data.pageBreakType,
               painter: textPainter,
               start: paginatedOffset,
               end: paginatedOffset + remainingPageText.length,
@@ -295,10 +284,10 @@ final class Paginated {
   static void _processSoftBreak({
     required final int offset,
     required final List<String> lines,
-    required final PageBreakType breakType,
+    required final PageBreakType pageBreakType,
     required final int maxLinesFromEndToBreakPage,
   }) {
-    final smallestBreakIndex = PageBreakType.values.indexOf(breakType);
+    final smallestBreakIndex = PageBreakType.values.indexOf(pageBreakType);
 
     for (int i = lines.length - 1;
         i >= max(1, lines.length - maxLinesFromEndToBreakPage);
@@ -340,6 +329,24 @@ final class Paginated {
 
     return 0;
   }
+
+  @override
+  bool operator ==(Object other) =>
+      other is Paginated &&
+      other.text == text &&
+      other.textStyle == textStyle &&
+      other.capTextStyle == capTextStyle &&
+      other.layoutSize == layoutSize &&
+      other.pages.equals(pages);
+
+  @override
+  int get hashCode => Object.hashAll([
+        text,
+        textStyle,
+        capTextStyle,
+        layoutSize,
+        ...pages,
+      ]);
 
   @override
   String toString() => '''

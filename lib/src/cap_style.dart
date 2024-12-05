@@ -8,10 +8,10 @@ final class CapStyle {
   final FontStyle? fontStyle;
 
   const CapStyle({
-    required this.fontFamily,
-    required this.fontWeight,
-    required this.fontStyle,
-    required this.color,
+    this.fontFamily,
+    this.fontWeight,
+    this.fontStyle,
+    this.color,
   });
 
   TextStyle textStyle(double fontSize) {
