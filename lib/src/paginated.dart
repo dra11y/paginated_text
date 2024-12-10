@@ -148,6 +148,8 @@ final class Paginated {
     // Skip any mid-sentence whitespace after the drop cap lines.
     offset += _skipWhitespace(offset, layoutData.data.text, newline: false);
 
+    // print('capLines: $capLines');
+
     return _DropCapLines(
       capPainter: capPainter,
       capLinesPainter: capLinesPainter,
@@ -173,7 +175,15 @@ final class Paginated {
     final maxLinesPerPage =
         (layoutData.safeLayoutSize.height / layoutData.linePixelHeight).ceil();
 
-    while (paginatedOffset < layoutData.data.text.length) {
+    // print('paginatedOffset: $paginatedOffset');
+    // print('layoutData.data.text.length: ${layoutData.data.text.length}');
+
+    while (paginatedOffset <= layoutData.data.text.length) {
+      // Handle case where all text fits within `capLines`.
+      if (paginatedOffset == layoutData.data.text.length) {
+        break;
+      }
+
       final initialPageText =
           isFirstPage ? (dropCapLines?.capLinesText ?? '') : '';
 
@@ -395,4 +405,15 @@ class _DropCapLines {
     required this.offset,
     required this.remainingHeight,
   });
+
+  @override
+  String toString() => '''
+  $_DropCapLines(
+    capChar: '$capChar',
+    capLines: $capLines,
+    capLinesText: '$capLinesText',
+    offset: $offset,
+    remainingHeight: $remainingHeight,
+  )
+  ''';
 }

@@ -16,6 +16,7 @@ class PaginatedText extends StatefulWidget {
     super.key,
     required this.data,
     required this.pageIndex,
+    this.layoutSize,
     this.builder,
     this.wantKeepAlive = true,
     this.actionsBuilder,
@@ -28,6 +29,7 @@ class PaginatedText extends StatefulWidget {
 
   final PaginateData data;
   final int pageIndex;
+  final Size? layoutSize;
   final PaginatedTextBuilder? builder;
   final bool wantKeepAlive;
   final Map<ShortcutActivator, Intent>? shortcuts;
@@ -64,22 +66,22 @@ class PaginatedText extends StatefulWidget {
 
 class _PaginatedTextState extends State<PaginatedText>
     with AutomaticKeepAliveClientMixin {
-  Size _size = Size.zero;
+  late Size _size = widget.layoutSize ?? Size.zero;
   late FocusNode _focusNode;
-  late final StreamController<Paginated> _paginatedController;
+  late final StreamController<Paginated> _streamController;
   late int pageIndex = widget.pageIndex;
 
   @override
   void initState() {
     super.initState();
     _focusNode = FocusNode();
-    _paginatedController = StreamController();
+    _streamController = StreamController();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _size = MediaQuery.sizeOf(context);
+    _size = widget.layoutSize ?? MediaQuery.sizeOf(context);
     _updatePaginated();
   }
 
@@ -93,8 +95,8 @@ class _PaginatedTextState extends State<PaginatedText>
   }
 
   Future<void> _updatePaginated() async {
-    await _paginatedController.addStream(
-      Stream.fromFuture(Paginated.paginate(widget.data, _size)),
+    _streamController.add(
+      await Paginated.paginate(widget.data, _size),
     );
   }
 
@@ -105,7 +107,7 @@ class _PaginatedTextState extends State<PaginatedText>
       }
 
       setState(() {
-        _size = size;
+        _size = widget.layoutSize ?? size;
       });
       _updatePaginated();
     });
@@ -125,7 +127,7 @@ class _PaginatedTextState extends State<PaginatedText>
     super.build(context);
 
     return StreamBuilder<Paginated>(
-      stream: _paginatedController.stream,
+      stream: _streamController.stream,
       builder: (context, snapshot) {
         final Paginated? paginated = snapshot.data;
 
@@ -134,7 +136,7 @@ class _PaginatedTextState extends State<PaginatedText>
         }
 
         final child = LayoutBuilder(builder: (context, constraints) {
-          _updateSizeIfNeeded(constraints.biggest);
+          _updateSizeIfNeeded(widget.layoutSize ?? constraints.biggest);
 
           return FocusableActionDetector(
             autofocus: widget.autofocus,

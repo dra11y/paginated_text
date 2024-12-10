@@ -270,18 +270,21 @@ final class TextOnlyPage extends TextPage {
 
   @override
   Widget widget(BuildContext context) {
-    return Text.rich(
-      TextSpan(
-        style: textStyle,
-        children: [
-          for (final line in lines) TextSpan(text: line.withNewline),
-        ],
+    return SizedBox(
+      width: double.infinity,
+      child: Text.rich(
+        TextSpan(
+          style: textStyle,
+          children: [
+            for (final line in lines) TextSpan(text: line.withNewline),
+          ],
+        ),
+        overflow: TextOverflow.clip,
+        softWrap: false,
+        textAlign: painter.textAlign,
+        textDirection: painter.textDirection,
+        textScaler: painter.textScaler,
       ),
-      overflow: TextOverflow.clip,
-      softWrap: false,
-      textAlign: painter.textAlign,
-      textDirection: painter.textDirection,
-      textScaler: painter.textScaler,
     );
   }
 }
