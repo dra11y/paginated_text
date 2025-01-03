@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:paginated_text/src/empty_text_painter.dart';
 import 'extensions.dart';
 
 import 'page_break_type.dart';
@@ -191,10 +192,6 @@ final class DropCapTextPage extends TextPage {
   }
 }
 
-final _emptyTextPainter =
-    TextPainter(text: TextSpan(text: ''), textDirection: TextDirection.ltr)
-      ..layout();
-
 final class TextOnlyPage extends TextPage {
   final PageBreakType pageBreakType;
   final TextPainter painter;
@@ -213,7 +210,7 @@ final class TextOnlyPage extends TextPage {
 
   static TextOnlyPage blank({required Size layoutSize}) => TextOnlyPage(
         pageBreakType: PageBreakType.word,
-        painter: _emptyTextPainter,
+        painter: emptyTextPainter,
         start: 0,
         end: 0,
         layoutSize: layoutSize,

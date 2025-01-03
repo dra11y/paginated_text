@@ -1,4 +1,102 @@
-import 'package:flutter/painting.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
+extension TextSpanExt on TextSpan {
+  // Helper function to recursively split
+  TextSpan _splitSpanAtOffset(int offset) {
+    final currentText = text ?? '';
+    if (offset <= currentText.length && currentText.isNotEmpty) {
+      final leftText = currentText.substring(0, offset);
+      final rightText = currentText.substring(offset);
+      return copyWith(
+        text: leftText,
+        children: [],
+      ).copyWith(children: [
+        copyWith(
+          text: rightText,
+          children: [],
+        )
+      ]);
+    }
+
+    var remainingOffset = offset - currentText.length;
+    final newChildren = <TextSpan>[];
+    for (var i = 0; i < (children?.length ?? 0); i++) {
+      final child = children![i];
+      if (child is! TextSpan) {
+        continue;
+      }
+      final childLength = child.toPlainText().length;
+      if (remainingOffset <= childLength) {
+        final splitChild = _splitSpanAtOffset(remainingOffset);
+        // splitChild is a span with left & right parts as children
+        final splitChildren = splitChild.children ?? [];
+        final leftSpan = copyWith(text: currentText, children: [
+          ...newChildren,
+          if (splitChildren.isNotEmpty) splitChildren.first,
+        ]);
+        final rightSpan = copyWith(
+          text: '',
+          children: [
+            if (splitChildren.length > 1) splitChildren.last,
+            ...children?.skip(i + 1) ?? [],
+          ],
+        );
+        return leftSpan.copyWith(children: [rightSpan]);
+      }
+      remainingOffset -= childLength;
+      newChildren.add(child);
+    }
+
+    return this;
+  }
+
+  List<TextSpan> split(int offset) {
+    if (offset < 0) {
+      throw ArgumentError.value(offset, 'offset', 'cannot be negative');
+    }
+    final text = toPlainText(
+      includeSemanticsLabels: false,
+      includePlaceholders: false,
+    );
+    if (offset == 0 || offset >= text.length - 1) {
+      return [this];
+    }
+
+    // Actual split call
+    final splitResult = _splitSpanAtOffset(offset);
+    return [
+      splitResult.children!.first as TextSpan,
+      splitResult.children!.last as TextSpan
+    ];
+  }
+
+  TextSpan copyWith({
+    String? text,
+    List<InlineSpan>? children,
+    TextStyle? style,
+    GestureRecognizer? recognizer,
+    MouseCursor? mouseCursor,
+    PointerEnterEventListener? onEnter,
+    PointerExitEventListener? onExit,
+    String? semanticsLabel,
+    Locale? locale,
+    bool? spellOut,
+  }) =>
+      TextSpan(
+        text: text ?? this.text,
+        children: children ?? this.children,
+        style: style ?? this.style,
+        recognizer: recognizer ?? this.recognizer,
+        mouseCursor: mouseCursor ?? this.mouseCursor,
+        onEnter: onEnter ?? this.onEnter,
+        onExit: onExit ?? this.onExit,
+        semanticsLabel: semanticsLabel ?? this.semanticsLabel,
+        locale: locale ?? this.locale,
+        spellOut: spellOut ?? this.spellOut,
+      );
+}
 
 extension StringExt on String {
   String get withNewline => contains('\n') ? this : '$this\n';
